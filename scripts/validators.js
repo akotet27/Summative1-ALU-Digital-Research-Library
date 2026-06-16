@@ -1,221 +1,124 @@
-// ── validators.js ────────────────────────────────────────
-// All regex validation rules for the book form.
-// Each function returns { valid: boolean, message: string }
-//
-// REGEX CATALOG:
-//
-// 1. TITLE — no leading/trailing spaces, no double spaces
-//    Pattern: /^\S(?:.*\S)?$/
-//    Example pass: "The Lean Startup"
-//    Example fail: " The Lean Startup" (leading space)
-//
-// 2. AUTHOR — same rule + back-reference catches duplicate words
-//    Pattern: /^\S(?:.*\S)?$/  +  /\b(\w+)\s+\1\b/i (advanced)
-//    Example pass: "Eric Ries"
-//    Example fail: "Eric Eric" (duplicate word — back-reference catches it)
-//
-// 3. PAGES — positive integer only
-//    Pattern: /^[1-9]\d*$/
-//    Example pass: "336"
-//    Example fail: "0", "-1", "33.5"
-//
-// 4. TAG — letters, spaces, hyphens only
-//    Pattern: /^[A-Za-z]+(?:[ -][A-Za-z]+)*$/
-//    Example pass: "Social Impact", "Sci-Fi"
-//    Example fail: "123", "Design@"
-//
-// 5. DATE — YYYY-MM-DD format
-//    Pattern: /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/
-//    Example pass: "2025-09-15"
-//    Example fail: "15-09-2025", "2025-13-01"
-//
-// 6. NOTES — duplicate word detection (advanced back-reference)
-//    Pattern: /\b(\w+)\s+\1\b/i
-//    Example catch: "very very good" → warns about duplicate word
-// ─────────────────────────────────────────────────────────
+/* scripts/validators.js — IIFE Module: regex validation rules
+ *
+ * Regex Catalog:
+ * 1. Title:  /^\S(?:.*\S)?$/  — no leading/trailing spaces
+ * 2. Author: /^[A-Za-z][A-Za-z.\s-]*[A-Za-z.]$/  — letters, dots, hyphens
+ * 3. Pages:  /^[1-9]\d*$/  — whole number > 0
+ * 4. Date:   /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/  — YYYY-MM-DD
+ * 5. Tag:    /^(?!.*--)[A-Za-z]+(?:[ -][A-Za-z]+)*$/ ADVANCED lookahead (no --)
+ * 6. Notes:  /\b(\w+)\s+\1\b/i  ADVANCED back-reference (duplicate words)
+ * 7. Search: compileRegex() — safe user-supplied pattern with try/catch
+ */
+;(function (App) {
+  'use strict';
 
-// ── RULE 1: Title ────────────────────────────────────────
-// No leading/trailing spaces, no double internal spaces
-const TITLE_REGEX        = /^\S(?:.*\S)?$/;
-const DOUBLE_SPACE_REGEX = /\s{2,}/;
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+  }
 
-export function validateTitle(value) {
-  if (!value || value.length === 0) {
-    return { valid: false, message: 'Title is required.' };
-  }
-  if (!TITLE_REGEX.test(value)) {
-    return { valid: false, message: 'Title cannot start or end with spaces.' };
-  }
-  if (DOUBLE_SPACE_REGEX.test(value)) {
-    return { valid: false, message: 'Title cannot contain double spaces.' };
-  }
-  if (value.length > 200) {
-    return { valid: false, message: 'Title must be under 200 characters.' };
-  }
-  return { valid: true, message: '' };
-}
+  App.validators = {
 
-// ── RULE 2: Author ───────────────────────────────────────
-// No leading/trailing spaces + back-reference catches
-// duplicate words like "Eric Eric" or "Smith Smith"
-const AUTHOR_REGEX    = /^\S(?:.*\S)?$/;
-const DUPLICATE_WORD  = /\b(\w+)\s+\1\b/i;  // ← ADVANCED: back-reference
+    // 1. Title — no leading/trailing spaces, no double spaces, max 200 chars
+    validateTitle: function (v) {
+      if (!v || !v.trim()) return 'Title is required.';
+      var t = v.trim();
+      if (!/^\S(?:.*\S)?$/.test(t)) return 'Title must not have leading or trailing spaces.';
+      if (/\s{2,}/.test(t)) return 'Title must not have consecutive spaces.';
+      if (t.length > 200) return 'Title must be 200 characters or fewer.';
+      return null;
+    },
 
-export function validateAuthor(value) {
-  if (!value || value.length === 0) {
-    return { valid: false, message: 'Author is required.' };
-  }
-  if (!AUTHOR_REGEX.test(value)) {
-    return { valid: false, message: 'Author cannot start or end with spaces.' };
-  }
-  // Advanced: back-reference detects duplicate consecutive words
-  const dupMatch = value.match(DUPLICATE_WORD);
-  if (dupMatch) {
-    return {
-      valid: false,
-      message: `Duplicate word detected: "${dupMatch[1]}". Did you type the name twice?`
-    };
-  }
-  if (value.length > 100) {
-    return { valid: false, message: 'Author must be under 100 characters.' };
-  }
-  return { valid: true, message: '' };
-}
+    // 2. Author — letters, dots, hyphens
+    validateAuthor: function (v) {
+      if (!v || !v.trim()) return 'Author is required.';
+      var t = v.trim();
+      if (!/^[A-Za-z][A-Za-z.\s-]*[A-Za-z.]$/.test(t))
+        return 'Author should contain only letters, spaces, hyphens, or periods (e.g. "J.K. Rowling").';
+      if (t.length > 120) return 'Author must be 120 characters or fewer.';
+      return null;
+    },
 
-// ── RULE 3: Pages ────────────────────────────────────────
-// Positive integer only — no decimals, no zero, no negatives
-const PAGES_REGEX = /^[1-9]\d*$/;
+    // 3. Pages — whole number greater than 0
+    validatePages: function (v) {
+      if (!v || !String(v).trim()) return 'Page count is required.';
+      if (!/^[1-9]\d*$/.test(String(v).trim())) return 'Pages must be a whole number greater than 0.';
+      if (parseInt(v, 10) > 50000) return 'Page count seems too large.';
+      return null;
+    },
 
-export function validatePages(value) {
-  const str = String(value).trim();
-  if (!str || str.length === 0) {
-    return { valid: false, message: 'Pages is required.' };
-  }
-  if (!PAGES_REGEX.test(str)) {
-    return { valid: false, message: 'Pages must be a positive whole number (e.g. 336).' };
-  }
-  if (Number(str) > 99999) {
-    return { valid: false, message: 'Pages seems too high. Please check.' };
-  }
-  return { valid: true, message: '' };
-}
+    // 4. Date — YYYY-MM-DD with basic month/day validation
+    validateDate: function (v) {
+      if (!v || !v.trim()) return 'Date is required.';
+      if (!/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(v.trim()))
+        return 'Date must be in YYYY-MM-DD format (e.g. 2025-09-01).';
+      return null;
+    },
 
-// ── RULE 4: Tag ──────────────────────────────────────────
-// Letters, spaces, hyphens only — no numbers or symbols
-// Tag is optional so empty string passes
-const TAG_REGEX = /^[A-Za-z]+(?:[ -][A-Za-z]+)*$/;
+    // 5. Tag — ADVANCED lookahead: forbids double hyphens (--)
+    validateTag: function (v) {
+      if (!v || !v.trim()) return 'Tag is required.';
+      var t = v.trim();
+      if (!/^(?!.*--)[A-Za-z]+(?:[ -][A-Za-z]+)*$/.test(t))
+        return 'Tag must contain only letters, single spaces or single hyphens (e.g. "Research Methods").';
+      if (t.length > 50) return 'Tag must be 50 characters or fewer.';
+      return null;
+    },
 
-export function validateTag(value) {
-  if (!value || value.trim().length === 0) {
-    return { valid: true, message: '' }; // optional field
-  }
-  if (!TAG_REGEX.test(value.trim())) {
-    return {
-      valid: false,
-      message: 'Tag can only contain letters, spaces, and hyphens (e.g. "Social Impact" or "Sci-Fi").'
-    };
-  }
-  if (value.length > 50) {
-    return { valid: false, message: 'Tag must be under 50 characters.' };
-  }
-  return { valid: true, message: '' };
-}
+    // 6. Notes — ADVANCED back-reference: catches duplicate consecutive words
+    validateNotes: function (v) {
+      if (!v) return null;
+      var dup = v.match(/\b(\w+)\s+\1\b/i);
+      if (dup) return 'Duplicate word detected: "' + dup[0] + '" — did you mean to write it twice?';
+      return null;
+    },
 
-// ── RULE 5: Date ─────────────────────────────────────────
-// Must be YYYY-MM-DD format with valid month and day
-const DATE_REGEX = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+    // Status
+    validateStatus: function (v) {
+      if (!['want', 'reading', 'finished'].includes(v)) return 'Please select a reading status.';
+      return null;
+    },
 
-export function validateDate(value) {
-  if (!value || value.length === 0) {
-    return { valid: false, message: 'Date is required.' };
-  }
-  if (!DATE_REGEX.test(value)) {
-    return {
-      valid: false,
-      message: 'Date must be in YYYY-MM-DD format (e.g. 2025-09-15).'
-    };
-  }
-  // Check date is not in the future
-  const selected = new Date(value);
-  const today    = new Date();
-  today.setHours(23, 59, 59, 999);
-  if (selected > today) {
-    return { valid: false, message: 'Date cannot be in the future.' };
-  }
-  return { valid: true, message: '' };
-}
+    // Run all validations at once
+    validateRecord: function (f) {
+      var v = App.validators;
+      var errors = {};
+      var pairs = [
+        ['title',  v.validateTitle(f.title)],
+        ['author', v.validateAuthor(f.author)],
+        ['pages',  v.validatePages(f.pages)],
+        ['date',   v.validateDate(f.date)],
+        ['tag',    v.validateTag(f.tag)],
+        ['status', v.validateStatus(f.status)],
+        ['notes',  v.validateNotes(f.notes)],
+      ];
+      pairs.forEach(function (p) { if (p[1]) errors[p[0]] = p[1]; });
+      return { errors: errors, isValid: Object.keys(errors).length === 0 };
+    },
 
-// ── RULE 6: Status ───────────────────────────────────────
-const VALID_STATUSES = ['Want to Read', 'Reading', 'Finished'];
+    // 7. Safe regex compiler for search
+    compileRegex: function (input, caseInsensitive) {
+      if (!input || !input.trim()) return { re: null, error: null };
+      try {
+        var flags = caseInsensitive !== false ? 'gi' : 'g';
+        return { re: new RegExp(input.trim(), flags), error: null };
+      } catch (e) {
+        return { re: null, error: 'Invalid regex: ' + e.message };
+      }
+    },
 
-export function validateStatus(value) {
-  if (!value || value.length === 0) {
-    return { valid: false, message: 'Please select a reading status.' };
-  }
-  if (!VALID_STATUSES.includes(value)) {
-    return { valid: false, message: 'Invalid status selected.' };
-  }
-  return { valid: true, message: '' };
-}
+    // Highlight matches in text, returns safe HTML string
+    highlight: function (text, re) {
+      if (!re || !text) return escapeHtml(text || '');
+      re.lastIndex = 0;
+      return String(text).replace(re, function (m) { return '<mark>' + escapeHtml(m) + '</mark>'; });
+    },
 
-// ── RULE 7: Notes — duplicate word warning (ADVANCED) ────
-// Uses back-reference to find repeated consecutive words
-// This is a WARNING not an error — notes are optional
-const DUPLICATE_WORD_NOTES = /\b(\w+)\s+\1\b/i;
+    normalizeTitle: function (v) {
+      return v.trim().replace(/\s{2,}/g, ' ');
+    },
 
-export function validateNotes(value) {
-  if (!value || value.trim().length === 0) {
-    return { valid: true, message: '' }; // optional
-  }
-  const dupMatch = value.match(DUPLICATE_WORD_NOTES);
-  if (dupMatch) {
-    return {
-      valid: true, // still valid — just a warning
-      message: `⚠️ Possible duplicate word: "${dupMatch[1]}"`
-    };
-  }
-  return { valid: true, message: '' };
-}
-
-// ── VALIDATE FULL FORM ───────────────────────────────────
-// Validates all fields at once.
-// Returns { valid: boolean, errors: { fieldName: message } }
-
-export function validateForm(data) {
-  const errors = {};
-
-  const titleResult  = validateTitle(data.title);
-  const authorResult = validateAuthor(data.author);
-  const pagesResult  = validatePages(data.pages);
-  const tagResult    = validateTag(data.tag);
-  const dateResult   = validateDate(data.dateAdded);
-  const statusResult = validateStatus(data.status);
-
-  if (!titleResult.valid)  errors.title     = titleResult.message;
-  if (!authorResult.valid) errors.author    = authorResult.message;
-  if (!pagesResult.valid)  errors.pages     = pagesResult.message;
-  if (!tagResult.valid)    errors.tag       = tagResult.message;
-  if (!dateResult.valid)   errors.dateAdded = dateResult.message;
-  if (!statusResult.valid) errors.status    = statusResult.message;
-
-  return {
-    valid:  Object.keys(errors).length === 0,
-    errors,
+    escapeHtml: escapeHtml
   };
-}
-
-// ── REAL-TIME SINGLE FIELD VALIDATOR ────────────────────
-// Called on input event for instant feedback
-
-export function validateField(name, value) {
-  switch (name) {
-    case 'title':     return validateTitle(value);
-    case 'author':    return validateAuthor(value);
-    case 'pages':     return validatePages(value);
-    case 'tag':       return validateTag(value);
-    case 'dateAdded': return validateDate(value);
-    case 'status':    return validateStatus(value);
-    case 'notes':     return validateNotes(value);
-    default:          return { valid: true, message: '' };
-  }
-}
+})(window.App = window.App || {});
