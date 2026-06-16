@@ -1,199 +1,43 @@
-/* ============================================================
-   layout.css — responsive grid, page structure, breakpoints
-   Breakpoints: ~360px (mobile, default), 768px (tablet), 1024px (desktop)
-   ============================================================ */
+/* ── RESPONSIVE LAYOUT — Mobile First ── */
 
-/* ── Layout: Mobile First ────────────────────────────────────── */
-.sidebar { display: none; }
-
-.main-content {
-  min-height: 100vh;
-  padding: 1.25rem 1rem 5rem; /* bottom pad for mobile nav */
+/* ── 360px — small phones ── */
+@media (max-width: 360px) {
+  .header-inner  { padding: 10px 12px; }
+  .logo-title    { font-size: 0.95rem; }
+  .logo-sub      { display: none; }
+  main           { padding: 14px 10px; }
+  .stats-grid    { grid-template-columns: 1fr; }
+  .stats-grid-2  { grid-template-columns: 1fr; }
+  .form-actions  { flex-direction: column; }
+  .btn           { width: 100%; justify-content: center; }
+  .import-export-row { flex-direction: column; }
 }
 
-.bottom-nav {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  display: flex;
-  background: var(--navy);
-  border-top: 1px solid var(--navy-mid);
-  z-index: 100;
-}
-
-.bottom-nav__item {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 0.75rem 0.5rem;
-  color: rgba(255,255,255,0.55);
-  text-decoration: none;
-  font-size: 1.4rem;
-  transition: color var(--transition), background var(--transition);
-}
-
-.bottom-nav__item.active,
-.bottom-nav__item:focus-visible {
-  color: var(--gold);
-  background: rgba(200,150,62,0.10);
-}
-
-/* ── Tablet: 768px ───────────────────────────────────────────── */
+/* ── 768px — tablets ── */
 @media (min-width: 768px) {
-  .main-content { padding: 2rem; }
+  .stats-grid   { grid-template-columns: repeat(4, 1fr); }
+  .stats-grid-2 { grid-template-columns: repeat(2, 1fr); }
+
+  /* Show table, hide cards */
+  .records-table-wrapper { display: block; }
+  .cards-view            { display: none;  }
+
+  .bar-chart { height: 110px; }
+
+  .book-form { max-width: 100%; }
 }
 
-/* ── Desktop: 1024px ─────────────────────────────────────────── */
+/* ── 1024px — desktop ── */
 @media (min-width: 1024px) {
-  body { display: flex; }
+  main { padding: 32px 24px; }
 
-  .sidebar {
-    display: flex;
-    flex-direction: column;
-    width: var(--sidebar-w);
-    min-height: 100vh;
-    background: var(--navy);
-    color: #fff;
-    padding: 1.5rem 1rem;
-    position: fixed;
-    top: 0; left: 0; bottom: 0;
-    z-index: 200;
-    overflow-y: auto;
-  }
-
-  .bottom-nav { display: none; }
-
-  .main-content {
-    margin-left: var(--sidebar-w);
-    padding: 2.5rem 2.5rem 2.5rem;
-    max-width: calc(100vw - var(--sidebar-w));
-  }
+  .bar-chart   { height: 130px; }
+  .about-card  { padding: 36px; }
+  .book-form   { max-width: 560px; }
 }
 
-/* ── Sidebar Internals ───────────────────────────────────────── */
-.sidebar__brand {
-  display: flex; align-items: center; gap: 0.75rem;
-  margin-bottom: 2.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+/* ── Mobile only — show cards, hide table ── */
+@media (max-width: 767px) {
+  .records-table-wrapper { display: none;  }
+  .cards-view            { display: block; }
 }
-
-.sidebar__logo {
-  display: flex; gap: 3px; align-items: flex-end; height: 32px;
-}
-.logo-spine {
-  display: block; width: 6px; border-radius: 2px;
-}
-.logo-spine:nth-child(1) { height: 28px; background: var(--status-want); }
-.logo-spine:nth-child(2) { height: 32px; background: var(--gold); }
-.logo-spine:nth-child(3) { height: 22px; background: var(--status-done); }
-
-.sidebar__name {
-  display: block; font-family: var(--font-display);
-  font-weight: 700; font-size: 1.05rem; color: #fff;
-}
-.sidebar__sub {
-  display: block; font-size: 0.7rem; color: rgba(255,255,255,0.5);
-  letter-spacing: 0.05em; text-transform: uppercase;
-}
-
-.nav-list { list-style: none; flex: 1; }
-
-.nav-link {
-  display: flex; align-items: center; gap: 0.75rem;
-  padding: 0.6rem 0.75rem;
-  color: rgba(255,255,255,0.65);
-  text-decoration: none;
-  border-radius: var(--radius);
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: color var(--transition), background var(--transition);
-  margin-bottom: 2px;
-}
-
-.nav-link:hover,
-.nav-link:focus-visible {
-  color: #fff;
-  background: rgba(255,255,255,0.07);
-}
-
-.nav-link.active {
-  color: var(--gold);
-  background: rgba(200,150,62,0.12);
-}
-
-.nav-icon { font-size: 1rem; width: 20px; text-align: center; }
-
-.sidebar__cap {
-  margin-top: auto;
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(255,255,255,0.1);
-}
-
-.cap-label {
-  display: block; font-size: 0.7rem;
-  color: rgba(255,255,255,0.5);
-  text-transform: uppercase; letter-spacing: 0.06em;
-  margin-bottom: 0.4rem;
-}
-
-.cap-bar {
-  height: 5px; background: rgba(255,255,255,0.12);
-  border-radius: 99px; overflow: hidden; margin-bottom: 0.4rem;
-}
-.cap-fill {
-  height: 100%; background: var(--gold);
-  border-radius: 99px;
-  transition: width 500ms ease;
-}
-.cap-text {
-  font-size: 0.75rem; color: rgba(255,255,255,0.55);
-}
-
-/* ── Pages ───────────────────────────────────────────────────── */
-.page { display: none; }
-.page--active { display: block; }
-
-.page-header {
-  margin-bottom: 1.75rem;
-}
-.page-header h1 {
-  font-family: var(--font-display);
-  font-size: clamp(1.6rem, 4vw, 2.2rem);
-  font-weight: 700; color: var(--navy);
-}
-.page-subtitle {
-  color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;
-}
-.page-header__actions {
-  display: flex; gap: 0.5rem; margin-top: 0.75rem;
-  flex-wrap: wrap;
-}
-
-/* ── Stats Grid ─────────────────────────────────────────────── */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
-  margin-bottom: 2rem;
-}
-
-@media (min-width: 768px) {
-  .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-}
-@media (min-width: 1024px) {
-  .stats-grid { grid-template-columns: repeat(6, 1fr); }
-}
-
-/* ── Settings Grid ──────────────────────────────────────────── */
-.settings-grid {
-  display: grid; gap: 1.25rem;
-  grid-template-columns: 1fr;
-  max-width: 720px;
-}
-@media (min-width: 768px) { .settings-grid { grid-template-columns: 1fr 1fr; } }
-
-/* ── Form row grid ──────────────────────────────────────────── */
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-@media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }

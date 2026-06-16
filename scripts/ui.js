@@ -349,4 +349,44 @@ export function resetForm() {
 }
 
 /** Show a single field error */
-export function showFieldError(fieldName,
+export function showFieldError(fieldName, message) {
+  const errorEl = document.getElementById(`${fieldName}-error`);
+  const inputEl = document.getElementById(`${fieldName}Input`)
+                || document.getElementById(`${fieldName}Select`);
+
+  if (errorEl) errorEl.textContent = message;
+  if (inputEl) {
+    inputEl.classList.toggle('invalid', !!message);
+    inputEl.classList.toggle('valid',   !message);
+  }
+}
+
+/** Clear a single field error */
+export function clearFieldError(fieldName) {
+  showFieldError(fieldName, '');
+}
+
+// ── SETTINGS ─────────────────────────────────────────────
+
+export function fillSettings() {
+  const goalEl  = document.getElementById('pageTarget');
+  const pphEl   = document.getElementById('pagesPerHour');
+
+  if (goalEl) goalEl.value = state.settings.goal || 20;
+  if (pphEl)  pphEl.value  = state.settings.pagesPerHour || 30;
+}
+
+// ── THEME ────────────────────────────────────────────────
+
+export function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+
+// ── HELPERS ──────────────────────────────────────────────
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}

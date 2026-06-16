@@ -1,437 +1,418 @@
-// scripts/app.js — Main entry point
-import { getRecords, getSettings, addRecord, updateRecord, deleteRecord,
-         replaceAll, updateSettings, generateId } from './state.js';
-import { validateRecord, validateTitle, validateAuthor, validatePages,
-         validateDate, validateTag, validateNotes, validateStatus,
-         normalizeTitle } from './validators.js';
-import { filterAndSort } from './search.js';
-import { renderTable, renderEditRow, renderStats, populateTagFilter,
-         showToast, announce } from './ui.js';
-import { validateImport } from './storage.js';
+// ── app.js ───────────────────────────────────────────────
+// Main entry point. Wires everything together.
+// Imports from all other modules and attaches event listeners.
 
-// ── Navigation ─────────────────────────────────────────────────
-const navigateTo = (page) => {
-  document.querySelectorAll('.page').forEach(p => {
-    p.classList.toggle('page--active', p.id === `page-${page}`);
+import { state, initState, addBook, updateBook,
+         deleteBook, replaceBooks, updateSettings } from './state.js';
+import { validateField, validateForm }              from './validators.js';
+import { compileSearch }                            from './search.js';
+import { loadSettings, exportJSON, parseImport }   from './storage.js';
+import {
+  showSection, renderDashboard, renderRecords,
+  fillFormForEdit, resetForm, showFieldError,
+  fillSettings, applyTheme, showToast, announce,
+} from './ui.js';
+
+// ── BOOT ─────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+  // 1. Load data from localStorage
+  initState();
+
+  // 2. Apply saved theme
+  applyTheme(state.settings.theme || 'light');
+
+  // 3. Set today's date as default in form
+  const dateInput = document.getElementById('dateInput');
+  if (dateInput) {
+    dateInput.value = new Date().toISOString().slice(0, 10);
+  }
+
+  // 4. Fill settings panel
+  fillSettings();
+
+  // 5. Render initial view
+  renderDashboard();
+  renderRecords();
+
+  // 6. Attach all event listeners
+  attachNavListeners();
+  attachFormListeners();
+  attachRecordsListeners();
+  attachSearchListeners();
+  attachSettingsListeners();
+  attachThemeListener();
+});
+
+// ── NAVIGATION ───────────────────────────────────────────
+
+function attachNavListeners() {
+  // Nav link clicks
+  document.querySelectorAll('.nav-link, [data-section]').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const section = link.dataset.section;
+      if (!section) return;
+      showSection(section);
+
+      // Refresh data when switching sections
+      if (section === 'dashboard') renderDashboard();
+      if (section === 'records')   renderRecords(getCurrentRegex());
+      if (section === 'add-form')  {
+        // Only reset if not editing
+        if (!state.editingId) resetForm();
+      }
+      if (section === 'settings')  fillSettings();
+    });
   });
-  document.querySelectorAll('.nav-link, .bottom-nav__item').forEach(a => {
-    const active = a.dataset.page === page;
-    a.classList.toggle('active', active);
-    if (active) a.setAttribute('aria-current', 'page');
-    else a.removeAttribute('aria-current');
+}
+
+// ── FORM ─────────────────────────────────────────────────
+
+function attachFormListeners() {
+  const form = document.getElementById('bookForm');
+  if (!form) return;
+
+  // Real-time validation on input
+  const fields = ['title', 'author', 'pages', 'tag', 'dateAdded', 'notes'];
+
+  fields.forEach(name => {
+    const inputId = name === 'dateAdded' ? 'dateInput'
+                  : name === 'status'    ? 'statusSelect'
+                  : `${name}Input`;
+    const el = document.getElementById(inputId);
+    if (!el) return;
+
+    el.addEventListener('input', () => {
+      const result = validateField(name, el.value);
+      showFieldError(
+        name === 'dateAdded' ? 'date' : name,
+        result.message
+      );
+      // Visual valid/invalid indicator
+      el.classList.toggle('invalid', !result.valid && el.value.length > 0);
+      el.classList.toggle('valid',    result.valid && el.value.length > 0);
+    });
   });
 
-  if (page === 'dashboard') { renderStats(getRecords(), getSettings()); }
-  if (page === 'library')   { refreshLibrary(); }
-  if (page === 'settings')  { loadSettingsForm(); }
-
-  // Reset add form heading
-  if (page === 'add') {
-    document.getElementById('add-heading').textContent = 'Add Resource';
-    document.getElementById('edit-id').value = '';
-    document.getElementById('cancel-edit').hidden = true;
-    document.getElementById('submit-btn').textContent = 'Save Resource';
-    document.getElementById('resource-form').reset();
-    clearFormErrors();
-  }
-
-  // Scroll top
-  document.getElementById('main-content').scrollTop = 0;
-  window.scrollTo(0, 0);
-};
-
-// Wire nav links
-document.addEventListener('click', (e) => {
-  const link = e.target.closest('[data-page]');
-  if (link) { e.preventDefault(); navigateTo(link.dataset.page); }
-});
-
-// ── Library refresh ────────────────────────────────────────────
-const getSearchState = () => ({
-  query:           document.getElementById('search-input').value,
-  caseInsensitive: !document.getElementById('search-case').checked,
-  status:          document.getElementById('filter-status').value,
-  tag:             document.getElementById('filter-tag').value,
-  sortBy:          document.getElementById('sort-by').value,
-});
-
-const refreshLibrary = () => {
-  const state = getSearchState();
-  const { filtered, re, regexError } = filterAndSort(getRecords(), state);
-
-  const hint = document.getElementById('search-hint');
-  const inp  = document.getElementById('search-input');
-  if (regexError) {
-    hint.textContent = '⚠ ' + regexError;
-    inp.classList.add('search-error');
-  } else if (state.query) {
-    hint.textContent = `✓ ${filtered.length} match${filtered.length !== 1 ? 'es' : ''}`;
-    inp.classList.remove('search-error');
-  } else {
-    hint.textContent = '';
-    inp.classList.remove('search-error');
-  }
-
-  populateTagFilter(getRecords());
-  renderTable(filtered, re);
-};
-
-// Search / filter events
-['search-input','filter-status','filter-tag','sort-by'].forEach(id => {
-  document.getElementById(id)?.addEventListener('input', refreshLibrary);
-  document.getElementById(id)?.addEventListener('change', refreshLibrary);
-});
-document.getElementById('search-case').addEventListener('change', refreshLibrary);
-
-document.getElementById('clear-filters').addEventListener('click', () => {
-  document.getElementById('search-input').value = '';
-  document.getElementById('filter-status').value = '';
-  document.getElementById('filter-tag').value = '';
-  document.getElementById('sort-by').value = 'dateAdded-desc';
-  refreshLibrary();
-});
-
-// ── Table actions (edit / delete) ──────────────────────────────
-document.getElementById('records-body').addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-action]');
-  if (!btn) return;
-  const { action, id } = btn.dataset;
-
-  if (action === 'edit') {
-    const rec = getRecords().find(r => r.id === id);
-    if (rec) renderEditRow(rec);
-  }
-
-  if (action === 'delete') {
-    const rec = getRecords().find(r => r.id === id);
-    if (rec) openConfirm(`Delete "${rec.title}"?`, () => {
-      deleteRecord(id);
-      refreshLibrary();
-      renderStats(getRecords(), getSettings());
-      showToast('Resource deleted.');
-      announce('Resource deleted.');
+  // Status select real-time
+  const statusEl = document.getElementById('statusSelect');
+  if (statusEl) {
+    statusEl.addEventListener('change', () => {
+      const result = validateField('status', statusEl.value);
+      showFieldError('status', result.message);
     });
   }
 
-  if (action === 'save-edit') {
-    const row = btn.closest('tr');
-    const fields = {};
-    row.querySelectorAll('[data-field]').forEach(el => {
-      fields[el.dataset.field] = el.value;
-    });
-    const { errors, isValid } = validateRecord({
-      title:  fields.title, author: fields.author,
-      pages:  fields.pages, date:   fields.dateAdded,
-      tag:    fields.tag,   status: fields.status,
-      notes:  '',
-    });
-    if (!isValid) {
-      const msg = Object.values(errors)[0];
-      showToast('⚠ ' + msg);
-      announce(msg, true);
-      return;
-    }
-    updateRecord(id, {
-      title:     normalizeTitle(fields.title),
-      author:    fields.author.trim(),
-      pages:     parseInt(fields.pages, 10),
-      dateAdded: fields.dateAdded.trim(),
-      tag:       fields.tag.trim(),
-      status:    fields.status,
-    });
-    refreshLibrary();
-    renderStats(getRecords(), getSettings());
-    showToast('Resource updated.');
-    announce('Resource updated.');
-  }
-
-  if (action === 'cancel-edit') {
-    refreshLibrary();
-  }
-});
-
-// ── Add/Edit Form ──────────────────────────────────────────────
-const fieldValidators = {
-  'f-title':  (v) => validateTitle(v),
-  'f-author': (v) => validateAuthor(v),
-  'f-pages':  (v) => validatePages(v),
-  'f-date':   (v) => validateDate(v),
-  'f-tag':    (v) => validateTag(v),
-  'f-status': (v) => validateStatus(v),
-  'f-notes':  (v) => validateNotes(v),
-};
-
-const showFieldError = (id, msg) => {
-  const input = document.getElementById(id);
-  const err   = document.getElementById(id + '-err');
-  if (!input || !err) return;
-  err.textContent = msg || '';
-  input.classList.toggle('invalid', !!msg);
-  input.classList.toggle('valid', !msg && input.value.trim() !== '');
-};
-
-const clearFormErrors = () => {
-  Object.keys(fieldValidators).forEach(id => showFieldError(id, ''));
-};
-
-// Live validation on blur
-Object.entries(fieldValidators).forEach(([id, fn]) => {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.addEventListener('blur', () => {
-    const err = fn(el.value);
-    showFieldError(id, err);
+  // Form submit
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    handleFormSubmit();
   });
-});
 
-document.getElementById('resource-form').addEventListener('submit', (e) => {
-  e.preventDefault();
+  // Cancel edit
+  document.getElementById('cancelBtn')?.addEventListener('click', () => {
+    state.editingId = null;
+    resetForm();
+    announce('Edit cancelled.');
+  });
+}
 
-  const fields = {
-    title:  document.getElementById('f-title').value,
-    author: document.getElementById('f-author').value,
-    pages:  document.getElementById('f-pages').value,
-    date:   document.getElementById('f-date').value,
-    tag:    document.getElementById('f-tag').value,
-    status: document.getElementById('f-status').value,
-    notes:  document.getElementById('f-notes').value,
+function handleFormSubmit() {
+  const data = {
+    title:     document.getElementById('titleInput').value,
+    author:    document.getElementById('authorInput').value,
+    pages:     document.getElementById('pagesInput').value,
+    status:    document.getElementById('statusSelect').value,
+    tag:       document.getElementById('tagInput').value,
+    dateAdded: document.getElementById('dateInput').value,
+    notes:     document.getElementById('notesInput').value,
   };
 
-  const { errors, isValid } = validateRecord(fields);
+  // Validate all fields
+  const { valid, errors } = validateForm(data);
 
   // Show all errors
-  showFieldError('f-title',  errors.title  || '');
-  showFieldError('f-author', errors.author || '');
-  showFieldError('f-pages',  errors.pages  || '');
-  showFieldError('f-date',   errors.date   || '');
-  showFieldError('f-tag',    errors.tag    || '');
-  showFieldError('f-status', errors.status || '');
-  showFieldError('f-notes',  errors.notes  || '');
+  showFieldError('title',  errors.title  || '');
+  showFieldError('author', errors.author || '');
+  showFieldError('pages',  errors.pages  || '');
+  showFieldError('tag',    errors.tag    || '');
+  showFieldError('date',   errors.dateAdded || '');
+  showFieldError('status', errors.status || '');
 
-  if (!isValid) {
-    const first = Object.values(errors)[0];
-    announce(first, true);
+  if (!valid) {
+    announce('Please fix the errors in the form before saving.');
+    // Focus first invalid field
+    const firstError = Object.keys(errors)[0];
+    const fieldId = firstError === 'dateAdded' ? 'dateInput'
+                  : firstError === 'status'    ? 'statusSelect'
+                  : `${firstError}Input`;
+    document.getElementById(fieldId)?.focus();
     return;
   }
 
-  const editId = document.getElementById('edit-id').value;
-  const now = new Date().toISOString();
+  const editId = document.getElementById('editId').value;
 
   if (editId) {
     // Update existing
-    updateRecord(editId, {
-      title:     normalizeTitle(fields.title),
-      author:    fields.author.trim(),
-      pages:     parseInt(fields.pages, 10),
-      dateAdded: fields.date.trim(),
-      tag:       fields.tag.trim(),
-      status:    fields.status,
-      notes:     fields.notes.trim(),
-    });
-    showToast('Resource updated.');
-    announce('Resource updated successfully.');
+    updateBook(editId, data);
+    state.editingId = null;
+    resetForm();
+    showToast(`✅ "${data.title}" updated!`);
+    announce(`Book "${data.title}" has been updated.`);
   } else {
     // Add new
-    addRecord({
-      id:        generateId(),
-      title:     normalizeTitle(fields.title),
-      author:    fields.author.trim(),
-      pages:     parseInt(fields.pages, 10),
-      dateAdded: fields.date.trim(),
-      tag:       fields.tag.trim(),
-      status:    fields.status,
-      notes:     fields.notes.trim(),
-      createdAt: now,
-      updatedAt: now,
-    });
-    showToast('Resource added! 📚');
-    announce('Resource added successfully.');
+    addBook(data);
+    resetForm();
+    showToast(`📚 "${data.title}" added to your vault!`);
+    announce(`Book "${data.title}" has been added.`);
   }
 
-  document.getElementById('resource-form').reset();
-  clearFormErrors();
-  document.getElementById('edit-id').value = '';
-  document.getElementById('cancel-edit').hidden = true;
-  document.getElementById('submit-btn').textContent = 'Save Resource';
-  document.getElementById('add-heading').textContent = 'Add Resource';
-  navigateTo('library');
-});
+  renderDashboard();
+  renderRecords(getCurrentRegex());
 
-// Load record into edit form
-const loadIntoForm = (rec) => {
-  document.getElementById('f-title').value  = rec.title;
-  document.getElementById('f-author').value = rec.author;
-  document.getElementById('f-pages').value  = rec.pages;
-  document.getElementById('f-date').value   = rec.dateAdded;
-  document.getElementById('f-tag').value    = rec.tag;
-  document.getElementById('f-status').value = rec.status;
-  document.getElementById('f-notes').value  = rec.notes || '';
-  document.getElementById('edit-id').value  = rec.id;
-  document.getElementById('cancel-edit').hidden = false;
-  document.getElementById('submit-btn').textContent = 'Update Resource';
-  document.getElementById('add-heading').textContent = 'Edit Resource';
-  clearFormErrors();
-  navigateTo('add');
-  document.getElementById('f-title').focus();
-};
+  // Switch to records view
+  showSection('records');
+}
 
-document.getElementById('cancel-edit').addEventListener('click', () => {
-  document.getElementById('resource-form').reset();
-  clearFormErrors();
-  document.getElementById('edit-id').value = '';
-  document.getElementById('cancel-edit').hidden = true;
-  document.getElementById('submit-btn').textContent = 'Save Resource';
-  document.getElementById('add-heading').textContent = 'Add Resource';
-});
+// ── RECORDS (edit / delete) ───────────────────────────────
 
-// Bookshelf / table edit button → load form
-document.getElementById('bookshelf').addEventListener('click', (e) => {
-  const spine = e.target.closest('.book-spine');
-  if (!spine) return;
-  // Find by title match (books can be edited from shelf)
-});
+function attachRecordsListeners() {
+  // Use event delegation — one listener on the container
+  const container = document.getElementById('records-container');
+  if (!container) return;
 
-// Also handle edit from table on library page → form
-document.addEventListener('click', (e) => {
-  const editLink = e.target.closest('[data-edit-full]');
-  if (editLink) {
-    const rec = getRecords().find(r => r.id === editLink.dataset.editFull);
-    if (rec) loadIntoForm(rec);
-  }
-});
+  container.addEventListener('click', e => {
+    // Edit button
+    const editBtn = e.target.closest('.edit-btn');
+    if (editBtn) {
+      const id   = editBtn.dataset.id;
+      const book = state.books.find(b => b.id === id);
+      if (!book) return;
 
-// ── Cancel edit in table ───────────────────────────────────────
-// (Handled above in records-body click handler)
+      state.editingId = id;
+      fillFormForEdit(book);
+      showSection('add-form');
+      document.getElementById('titleInput')?.focus();
+      announce(`Editing "${book.title}". Make your changes and click Update Book.`);
+      return;
+    }
 
-// ── Page converter ─────────────────────────────────────────────
-document.getElementById('conv-input')?.addEventListener('input', (e) => {
-  const pages = Number(e.target.value);
-  const ppm   = Number(getSettings().ppm || 1.5);
-  const el    = document.getElementById('conversion-results');
-  if (!pages || pages <= 0) { el.innerHTML = ''; return; }
-  const minutes = pages / ppm;
-  const hours   = minutes / 60;
-  el.innerHTML = `
-    <div>At ${ppm} pages/min:</div>
-    <div><strong>${Math.round(minutes)}</strong> minutes to read</div>
-    <div><strong>${hours.toFixed(1)}</strong> hours to read</div>
-    <div><strong>${(hours / 8).toFixed(1)}</strong> work-days (8h)</div>
-  `;
-});
+    // Delete button
+    const delBtn = e.target.closest('.delete-btn');
+    if (delBtn) {
+      const id   = delBtn.dataset.id;
+      const book = state.books.find(b => b.id === id);
+      if (!book) return;
 
-// ── Settings ───────────────────────────────────────────────────
-const loadSettingsForm = () => {
-  const s = getSettings();
-  document.getElementById('s-goal').value = s.goal || '';
-  document.getElementById('s-ppm').value  = s.ppm  || 1.5;
-};
+      // Confirm before deleting
+      const confirmed = window.confirm(
+        `Delete "${book.title}"?\nThis cannot be undone.`
+      );
+      if (!confirmed) return;
 
-document.getElementById('save-goal-btn').addEventListener('click', () => {
-  const val = Number(document.getElementById('s-goal').value);
-  updateSettings({ goal: val >= 0 ? val : 0 });
-  renderStats(getRecords(), getSettings());
-  showToast('Goal saved.');
-  announce('Reading goal saved.');
-});
-
-document.getElementById('save-units-btn').addEventListener('click', () => {
-  const val = parseFloat(document.getElementById('s-ppm').value);
-  if (!val || val <= 0) { showToast('Enter a valid reading speed.'); return; }
-  updateSettings({ ppm: val });
-  showToast('Reading speed saved.');
-  announce('Reading speed saved.');
-});
-
-document.getElementById('clear-data-btn').addEventListener('click', () => {
-  openConfirm('Delete ALL resources? This cannot be undone.', () => {
-    replaceAll([]);
-    renderStats(getRecords(), getSettings());
-    refreshLibrary();
-    showToast('All data cleared.');
-    announce('All data cleared.', true);
+      deleteBook(id);
+      renderRecords(getCurrentRegex());
+      renderDashboard();
+      showToast(`🗑️ "${book.title}" deleted.`, 'error');
+      announce(`"${book.title}" has been deleted.`);
+    }
   });
+}
+
+// ── SEARCH ───────────────────────────────────────────────
+
+let searchTimeout = null;
+
+function attachSearchListeners() {
+  const searchInput = document.getElementById('searchInput');
+  const caseToggle  = document.getElementById('caseToggle');
+  const errorEl     = document.getElementById('search-error');
+
+  if (!searchInput) return;
+
+  const doSearch = () => {
+    const query         = searchInput.value;
+    const caseSensitive = caseToggle?.checked || false;
+    state.searchQuery   = query;
+
+    const { regex, error } = compileSearch(query, caseSensitive);
+
+    if (error) {
+      if (errorEl) errorEl.textContent = error;
+      return;
+    }
+
+    if (errorEl) errorEl.textContent = '';
+    renderRecords(regex);
+  };
+
+  // Debounce — wait 250ms after typing stops
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(doSearch, 250);
+  });
+
+  caseToggle?.addEventListener('change', doSearch);
+}
+
+function getCurrentRegex() {
+  const query       = document.getElementById('searchInput')?.value || '';
+  const caseSensitive = document.getElementById('caseToggle')?.checked || false;
+  const { regex }   = compileSearch(query, caseSensitive);
+  return regex;
+}
+
+// ── SORT ─────────────────────────────────────────────────
+
+document.addEventListener('click', e => {
+  const sortBtn = e.target.closest('.sort-btn');
+  if (!sortBtn) return;
+
+  const field = sortBtn.dataset.sort;
+
+  // Toggle direction if same field
+  if (state.sortBy === field) {
+    state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    state.sortBy  = field;
+    state.sortDir = 'asc';
+  }
+
+  // Update button states
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    const isActive = btn.dataset.sort === field;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+
+  renderRecords(getCurrentRegex());
+  announce(`Sorted by ${field} ${state.sortDir === 'asc' ? 'ascending' : 'descending'}.`);
 });
 
-// ── Import / Export ────────────────────────────────────────────
-document.getElementById('export-btn').addEventListener('click', () => {
-  const data = getRecords();
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `alu-library-${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('Library exported.');
-  announce('Library exported as JSON.');
+// ── FILTER ───────────────────────────────────────────────
+
+document.addEventListener('click', e => {
+  const filterBtn = e.target.closest('.filter-btn');
+  if (!filterBtn) return;
+
+  state.filterStatus = filterBtn.dataset.filter;
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    const isActive = btn.dataset.filter === state.filterStatus;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+
+  renderRecords(getCurrentRegex());
+  announce(`Filtered by: ${state.filterStatus}.`);
 });
 
-document.getElementById('import-file').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    try {
-      const data = JSON.parse(ev.target.result);
-      if (!validateImport(data)) {
-        showToast('⚠ Invalid JSON structure — import failed.');
-        announce('Import failed: invalid structure.', true);
+// ── SETTINGS ─────────────────────────────────────────────
+
+function attachSettingsListeners() {
+
+  // Save goal
+  document.getElementById('saveTargetBtn')?.addEventListener('click', () => {
+    const val = parseInt(document.getElementById('pageTarget').value, 10);
+    if (!val || val < 1) {
+      showToast('Please enter a valid goal (minimum 1).', 'error');
+      return;
+    }
+    updateSettings({ goal: val });
+    renderDashboard();
+    showToast(`🎯 Goal set to ${val} books!`);
+    announce(`Capstone reading goal updated to ${val} books.`);
+  });
+
+  // Save units
+  document.getElementById('saveUnitsBtn')?.addEventListener('click', () => {
+    const val = parseInt(document.getElementById('pagesPerHour').value, 10);
+    if (!val || val < 1) {
+      showToast('Please enter a valid reading speed.', 'error');
+      return;
+    }
+    updateSettings({ pagesPerHour: val });
+    renderDashboard();
+    showToast(`📖 Reading speed set to ${val} pages/hour!`);
+    announce(`Reading speed updated to ${val} pages per hour.`);
+  });
+
+  // Export JSON
+  document.getElementById('exportBtn')?.addEventListener('click', () => {
+    if (state.books.length === 0) {
+      showToast('No books to export.', 'error');
+      return;
+    }
+    exportJSON(state.books);
+    showToast(`⬇️ Exported ${state.books.length} books!`);
+    announce(`Exported ${state.books.length} books as JSON.`);
+  });
+
+  // Import JSON
+  document.getElementById('importFile')?.addEventListener('change', e => {
+    const file   = e.target.files[0];
+    const status = document.getElementById('import-status');
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const result = parseImport(ev.target.result);
+      if (!result.ok) {
+        if (status) status.textContent = `❌ ${result.error}`;
+        showToast(result.error, 'error');
+        announce(`Import failed: ${result.error}`);
         return;
       }
-      openConfirm(`Import ${data.length} records? This will replace your current library.`, () => {
-        const now = new Date().toISOString();
-        const normalised = data.map(r => ({
-          ...r,
-          createdAt: r.createdAt || now,
-          updatedAt: r.updatedAt || now,
-        }));
-        replaceAll(normalised);
-        refreshLibrary();
-        renderStats(getRecords(), getSettings());
-        showToast(`Imported ${normalised.length} resources.`);
-        announce(`Imported ${normalised.length} resources.`);
-      });
-    } catch {
-      showToast('⚠ Could not parse JSON file.');
-      announce('Import failed: could not parse file.', true);
+
+      const confirmed = window.confirm(
+        `Import ${result.books.length} books? This will REPLACE your current library.`
+      );
+      if (!confirmed) return;
+
+      replaceBooks(result.books);
+      renderDashboard();
+      renderRecords();
+
+      if (status) {
+        status.textContent = `✅ Imported ${result.books.length} books successfully!`;
+      }
+      showToast(`✅ Imported ${result.books.length} books!`);
+      announce(`Successfully imported ${result.books.length} books.`);
+    };
+
+    reader.readAsText(file);
+    // Reset file input so same file can be imported again
+    e.target.value = '';
+  });
+
+  // Clear all data
+  document.getElementById('clearAllBtn')?.addEventListener('click', () => {
+    if (state.books.length === 0) {
+      showToast('Library is already empty.', 'error');
+      return;
     }
-  };
-  reader.readAsText(file);
-  e.target.value = ''; // reset
-});
+    const confirmed = window.confirm(
+      `Delete ALL ${state.books.length} books? This cannot be undone.`
+    );
+    if (!confirmed) return;
 
-// ── Confirm modal ──────────────────────────────────────────────
-let pendingConfirm = null;
+    replaceBooks([]);
+    renderDashboard();
+    renderRecords();
+    showToast('🗑️ All data cleared.', 'error');
+    announce('All books have been deleted.');
+  });
+}
 
-const openConfirm = (msg, callback) => {
-  pendingConfirm = callback;
-  document.getElementById('confirm-body').textContent = msg;
-  const overlay = document.getElementById('confirm-overlay');
-  overlay.hidden = false;
-  document.getElementById('confirm-yes').focus();
-};
+// ── THEME TOGGLE ─────────────────────────────────────────
 
-const closeConfirm = () => {
-  document.getElementById('confirm-overlay').hidden = true;
-  pendingConfirm = null;
-};
-
-document.getElementById('confirm-yes').addEventListener('click', () => {
-  if (pendingConfirm) pendingConfirm();
-  closeConfirm();
-});
-document.getElementById('confirm-no').addEventListener('click', closeConfirm);
-
-document.getElementById('confirm-overlay').addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) closeConfirm();
-});
-
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeConfirm();
-});
-
-// ── Today's date helper ────────────────────────────────────────
-document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
-
-// ── Init ───────────────────────────────────────────────────────
-navigateTo('dashboard');
+function attachThemeListener() {
+  document.getElementById('themeToggle')?.addEventListener('click', () => {
+    const current = state.settings.theme || 'light';
+    const next    = current === 'light' ? 'dark' : 'light';
+    updateSettings({ theme: next });
+    applyTheme(next);
+    announce(`${next === 'dark' ? 'Dark' : 'Light'} mode enabled.`);
+  });
+}
