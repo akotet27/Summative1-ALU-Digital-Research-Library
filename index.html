@@ -3,480 +3,514 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ALU Library — Capstone Reading Tracker</title>
+  <title>ALU Library — Capstone Research Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles/main.css" />
-  <link rel="stylesheet" href="styles/layout.css" />
-  <link rel="stylesheet" href="styles/components.css" />
 </head>
 <body>
 
-  <!-- Skip to content link for keyboard users -->
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
-  <!-- ── HEADER ── -->
-  <header class="site-header" role="banner">
-    <div class="header-inner">
-      <div class="logo">
-        <span class="logo-icon">📚</span>
-        <div class="logo-text-group">
-          <span class="logo-title">ALU Library</span>
-          <span class="logo-sub">Capstone Reading Tracker</span>
-        </div>
-      </div>
-      <button
-        class="theme-toggle"
-        id="themeToggle"
-        aria-label="Toggle dark mode"
-        title="Toggle dark mode"
-      >
-        🌙
-      </button>
-    </div>
+  <!-- Mobile top bar -->
+  <header class="topbar" aria-label="Mobile navigation bar">
+    <button class="topbar__menu" id="sidebar-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+    </button>
+    <span class="topbar__title">ALU Library</span>
   </header>
 
-  <!-- ── NAV ── -->
-  <nav class="site-nav" role="navigation" aria-label="Main navigation">
-    <ul role="list">
-      <li><a href="#dashboard" class="nav-link active" data-section="dashboard">📊 Dashboard</a></li>
-      <li><a href="#records"   class="nav-link"        data-section="records">📚 My Books</a></li>
-      <li><a href="#add-form"  class="nav-link"        data-section="add-form">➕ Add Book</a></li>
-      <li><a href="#settings"  class="nav-link"        data-section="settings">⚙️ Settings</a></li>
-      <li><a href="#about"     class="nav-link"        data-section="about">ℹ️ About</a></li>
+  <!-- Sidebar backdrop -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
+
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar" aria-label="Main navigation">
+    <div class="sidebar__header">
+      <div class="sidebar__brand">
+        <div class="sidebar__logo" aria-hidden="true">
+          <span class="logo-spine logo-spine--want"></span>
+          <span class="logo-spine logo-spine--reading"></span>
+          <span class="logo-spine logo-spine--done"></span>
+        </div>
+        <div>
+          <span class="sidebar__name">ALU Library</span>
+          <span class="sidebar__sub">Capstone Tracker</span>
+        </div>
+      </div>
+      <button class="sidebar__close" id="sidebar-close" aria-label="Close navigation menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+
+    <ul class="nav-list" role="list">
+      <li><a href="#" class="nav-link active" data-page="dashboard" aria-current="page">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+        <span>Dashboard</span>
+      </a></li>
+      <li><a href="#" class="nav-link" data-page="library">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></svg>
+        <span>My Library</span>
+      </a></li>
+      <li><a href="#" class="nav-link" data-page="add">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+        <span>Add Resource</span>
+      </a></li>
+      <li><a href="#" class="nav-link" data-page="settings">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>Settings</span>
+      </a></li>
+      <li><a href="#" class="nav-link" data-page="about">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span>About</span>
+      </a></li>
     </ul>
+
+    <div class="sidebar__cap">
+      <div class="cap-header">
+        <span class="cap-label">Reading Goal</span>
+        <span class="cap-text" id="cap-text">No goal set</span>
+      </div>
+      <div class="cap-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Reading goal progress">
+        <div class="cap-fill" id="cap-fill"></div>
+      </div>
+    </div>
   </nav>
 
-  <!-- ── MAIN ── -->
-  <main id="main-content" role="main">
+  <!-- Main Content -->
+  <main id="main-content" class="main-content">
+    <div role="status" aria-live="polite" aria-atomic="true" class="sr-only" id="live-polite"></div>
+    <div role="alert" aria-live="assertive" aria-atomic="true" class="sr-only" id="live-assertive"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
-    <!-- ARIA live regions -->
-    <div id="status-msg" role="status" aria-live="polite"   aria-atomic="true" class="sr-only"></div>
-    <div id="cap-alert"  role="alert"  aria-live="assertive" aria-atomic="true" class="sr-only"></div>
-
-    <!-- ══ SECTION 1: Dashboard ══ -->
-    <section id="dashboard" class="section active" aria-labelledby="dashboard-heading">
-      <div class="section-header">
+    <!-- DASHBOARD -->
+    <section id="page-dashboard" class="page page--active" aria-labelledby="dashboard-heading">
+      <header class="page-header">
         <h1 id="dashboard-heading">Dashboard</h1>
-        <p class="section-sub">Your capstone reading journey · Final Year 2025/26</p>
-      </div>
+        <p class="page-subtitle">Your capstone reading at a glance</p>
+      </header>
 
-      <!-- Stats grid -->
       <div class="stats-grid">
-        <article class="stat-card" aria-label="Total books">
-          <span class="stat-number" id="stat-total">0</span>
-          <span class="stat-label">Total Books</span>
-        </article>
-        <article class="stat-card stat-green" aria-label="Finished books">
-          <span class="stat-number" id="stat-finished">0</span>
-          <span class="stat-label">✅ Finished</span>
-        </article>
-        <article class="stat-card stat-blue" aria-label="Currently reading">
-          <span class="stat-number" id="stat-reading">0</span>
-          <span class="stat-label">📖 Reading</span>
-        </article>
-        <article class="stat-card stat-orange" aria-label="Want to read">
-          <span class="stat-number" id="stat-want">0</span>
-          <span class="stat-label">📋 Want to Read</span>
-        </article>
-      </div>
-
-      <!-- Total pages -->
-      <div class="stats-grid stats-grid-2">
-        <article class="stat-card" aria-label="Total pages read">
-          <span class="stat-number" id="stat-pages">0</span>
-          <span class="stat-label">Total Pages</span>
-        </article>
-        <article class="stat-card" aria-label="Top tag">
-          <span class="stat-number stat-tag" id="stat-top-tag">—</span>
-          <span class="stat-label">Top Category</span>
-        </article>
-      </div>
-
-      <!-- Reading goal progress -->
-      <div class="cap-section" aria-label="Capstone reading goal">
-        <h2>📎 Capstone Reading Goal</h2>
-        <div
-          class="cap-bar-wrapper"
-          role="progressbar"
-          aria-valuenow="0"
-          aria-valuemin="0"
-          aria-valuemax="100"
-          aria-label="Books finished vs goal"
-          id="capBarWrapper"
-        >
-          <div class="cap-bar" id="capBar"></div>
+        <div class="stat-card stat-card--total">
+          <div class="stat-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+          </div>
+          <div class="stat-card__body">
+            <span class="stat-card__value" id="stat-total">0</span>
+            <span class="stat-card__label">Total Resources</span>
+          </div>
         </div>
-        <p id="cap-message" class="cap-message"></p>
-      </div>
-
-      <!-- Last 7 days chart -->
-      <div class="chart-section">
-        <h2>📅 Books Added — Last 7 Days</h2>
-        <div class="bar-chart" id="weekChart" aria-label="Books added in the last 7 days">
+        <div class="stat-card stat-card--want">
+          <div class="stat-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+          </div>
+          <div class="stat-card__body">
+            <span class="stat-card__value" id="stat-want">0</span>
+            <span class="stat-card__label">Want to Read</span>
+          </div>
+        </div>
+        <div class="stat-card stat-card--reading">
+          <div class="stat-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          </div>
+          <div class="stat-card__body">
+            <span class="stat-card__value" id="stat-reading">0</span>
+            <span class="stat-card__label">Currently Reading</span>
+          </div>
+        </div>
+        <div class="stat-card stat-card--done">
+          <div class="stat-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+          </div>
+          <div class="stat-card__body">
+            <span class="stat-card__value" id="stat-done">0</span>
+            <span class="stat-card__label">Finished</span>
+          </div>
+        </div>
+        <div class="stat-card stat-card--pages">
+          <div class="stat-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+          </div>
+          <div class="stat-card__body">
+            <span class="stat-card__value" id="stat-pages">0</span>
+            <span class="stat-card__label">Pages Read</span>
+          </div>
+        </div>
+        <div class="stat-card stat-card--tag">
+          <div class="stat-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>
+          </div>
+          <div class="stat-card__body">
+            <span class="stat-card__value stat-card__value--sm" id="stat-top-tag">—</span>
+            <span class="stat-card__label">Top Tag</span>
+          </div>
         </div>
       </div>
+
+      <div class="cap-message" id="cap-message" aria-live="polite" hidden></div>
+
+      <section class="chart-section" aria-labelledby="chart-heading">
+        <h2 id="chart-heading">Resources Added — Last 7 Days</h2>
+        <div class="bar-chart" id="bar-chart" role="img" aria-label="Bar chart: resources added in last 7 days"></div>
+      </section>
+
+      <section class="shelf-section" aria-labelledby="shelf-heading">
+        <h2 id="shelf-heading">Your Bookshelf <span class="shelf-hint">Click a spine to view</span></h2>
+        <div class="bookshelf" id="bookshelf" aria-label="Visual bookshelf — click a spine to view that resource">
+          <p class="empty-state" id="shelf-empty">No resources yet. <a href="#" data-page="add">Add your first one</a></p>
+        </div>
+      </section>
     </section>
 
-    <!-- ══ SECTION 2: My Books ══ -->
-    <section id="records" class="section" aria-labelledby="records-heading">
-      <div class="section-header">
-        <h1 id="records-heading">My Books</h1>
-        <p class="section-sub">Your personal ALU Library catalog</p>
-      </div>
-
-      <!-- Search -->
-      <div class="search-bar" role="search">
-        <label for="searchInput">🔍 Search books (supports regex)</label>
-        <input
-          type="text"
-          id="searchInput"
-          placeholder='Try: Lean or /^The/i or /(design|product)/i'
-          autocomplete="off"
-          aria-describedby="search-hint"
-        />
-        <div class="search-options">
-          <span id="search-hint" class="hint">Type a word or a /regex/ pattern</span>
-          <label class="checkbox-label">
-            <input type="checkbox" id="caseToggle" />
-            Case sensitive
-          </label>
-        </div>
-        <p id="search-error" class="error-msg" role="alert" aria-live="polite"></p>
-      </div>
-
-      <!-- Filter by status -->
-      <div class="filter-controls" role="group" aria-label="Filter by status">
-        <span class="filter-label">Filter:</span>
-        <button class="filter-btn active" data-filter="all"          aria-pressed="true">All</button>
-        <button class="filter-btn"        data-filter="Finished"     aria-pressed="false">✅ Finished</button>
-        <button class="filter-btn"        data-filter="Reading"      aria-pressed="false">📖 Reading</button>
-        <button class="filter-btn"        data-filter="Want to Read" aria-pressed="false">📋 Want to Read</button>
-      </div>
-
-      <!-- Sort controls -->
-      <div class="sort-controls" role="group" aria-label="Sort options">
-        <span>Sort by:</span>
-        <button class="sort-btn active" data-sort="dateAdded" aria-pressed="true">Date ↕</button>
-        <button class="sort-btn"        data-sort="title"     aria-pressed="false">Title A↕Z</button>
-        <button class="sort-btn"        data-sort="pages"     aria-pressed="false">Pages ↑↓</button>
-        <button class="sort-btn"        data-sort="author"    aria-pressed="false">Author A↕Z</button>
-      </div>
-
-      <!-- Records — table on desktop, cards on mobile -->
-      <div id="records-container" aria-live="polite" aria-label="Book records">
-        <!-- Filled by ui.js -->
-      </div>
-
-      <p id="empty-state" class="empty-state" hidden>
-        No books yet. <a href="#add-form" data-section="add-form">Add your first book!</a>
-      </p>
-    </section>
-
-    <!-- ══ SECTION 3: Add / Edit ══ -->
-    <section id="add-form" class="section" aria-labelledby="form-heading">
-      <div class="section-header">
-        <h1 id="form-heading">Add a Book</h1>
-        <p class="section-sub">Track a new book in your capstone library</p>
-      </div>
-
-      <form id="bookForm" novalidate class="book-form">
-        <p id="form-status" class="sr-only" role="status" aria-live="polite"></p>
-
-        <!-- Title -->
-        <div class="form-group">
-          <label for="titleInput">
-            Title <span class="required" aria-hidden="true">*</span>
-          </label>
-          <input
-            type="text"
-            id="titleInput"
-            name="title"
-            required
-            autocomplete="off"
-            aria-required="true"
-            aria-describedby="title-error"
-            placeholder="e.g. The Lean Startup"
-          />
-          <span id="title-error" class="error-msg" role="alert" aria-live="polite"></span>
-        </div>
-
-        <!-- Author -->
-        <div class="form-group">
-          <label for="authorInput">
-            Author <span class="required" aria-hidden="true">*</span>
-          </label>
-          <input
-            type="text"
-            id="authorInput"
-            name="author"
-            required
-            autocomplete="off"
-            aria-required="true"
-            aria-describedby="author-error"
-            placeholder="e.g. Eric Ries"
-          />
-          <span id="author-error" class="error-msg" role="alert" aria-live="polite"></span>
-        </div>
-
-        <!-- Pages -->
-        <div class="form-group">
-          <label for="pagesInput">
-            Pages <span class="required" aria-hidden="true">*</span>
-          </label>
-          <input
-            type="number"
-            id="pagesInput"
-            name="pages"
-            min="1"
-            required
-            aria-required="true"
-            aria-describedby="pages-error pages-hint"
-            placeholder="e.g. 336"
-          />
-          <span id="pages-hint" class="hint">Must be a positive whole number</span>
-          <span id="pages-error" class="error-msg" role="alert" aria-live="polite"></span>
-        </div>
-
-        <!-- Status -->
-        <div class="form-group">
-          <label for="statusSelect">
-            Status <span class="required" aria-hidden="true">*</span>
-          </label>
-          <select
-            id="statusSelect"
-            name="status"
-            required
-            aria-required="true"
-            aria-describedby="status-error"
-          >
-            <option value="">— Select status —</option>
-            <option value="Want to Read">📋 Want to Read</option>
-            <option value="Reading">📖 Reading</option>
-            <option value="Finished">✅ Finished</option>
-          </select>
-          <span id="status-error" class="error-msg" role="alert" aria-live="polite"></span>
-        </div>
-
-        <!-- Tag -->
-        <div class="form-group">
-          <label for="tagInput">Category / Tag</label>
-          <input
-            type="text"
-            id="tagInput"
-            name="tag"
-            list="tag-suggestions"
-            aria-describedby="tag-error tag-hint"
-            placeholder="e.g. Entrepreneurship"
-          />
-          <datalist id="tag-suggestions">
-            <option value="Entrepreneurship">
-            <option value="Leadership">
-            <option value="Design">
-            <option value="Data">
-            <option value="Innovation">
-            <option value="Product">
-            <option value="Research">
-            <option value="Psychology">
-            <option value="Technology">
-            <option value="Finance">
-            <option value="Social Impact">
-            <option value="Health">
-          </datalist>
-          <span id="tag-hint" class="hint">Letters, spaces, hyphens only</span>
-          <span id="tag-error" class="error-msg" role="alert" aria-live="polite"></span>
-        </div>
-
-        <!-- Date Added -->
-        <div class="form-group">
-          <label for="dateInput">
-            Date Added <span class="required" aria-hidden="true">*</span>
-          </label>
-          <input
-            type="date"
-            id="dateInput"
-            name="dateAdded"
-            required
-            aria-required="true"
-            aria-describedby="date-error"
-          />
-          <span id="date-error" class="error-msg" role="alert" aria-live="polite"></span>
-        </div>
-
-        <!-- Notes -->
-        <div class="form-group">
-          <label for="notesInput">Notes / Key Takeaways</label>
-          <textarea
-            id="notesInput"
-            name="notes"
-            rows="3"
-            placeholder="How does this relate to your capstone? Key insights..."
-            aria-describedby="notes-error"
-          ></textarea>
-          <span id="notes-error" class="error-msg" role="alert" aria-live="polite"></span>
-        </div>
-
-        <!-- Hidden edit id -->
-        <input type="hidden" id="editId" value="" />
-
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary" id="submitBtn">
-            💾 Save Book
+    <!-- LIBRARY -->
+    <section id="page-library" class="page" aria-labelledby="library-heading">
+      <header class="page-header">
+        <h1 id="library-heading">My Library</h1>
+        <div class="page-header__actions">
+          <button class="btn btn--sm btn--outline" id="export-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            Export JSON
           </button>
-          <button type="button" class="btn btn-secondary" id="cancelBtn" hidden>
-            ✕ Cancel Edit
+          <label class="btn btn--sm btn--outline" for="import-file">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+            Import JSON
+            <input type="file" id="import-file" accept=".json" class="sr-only" aria-label="Choose JSON file to import" />
+          </label>
+        </div>
+      </header>
+
+      <div class="library-controls">
+        <div class="search-wrap">
+          <span class="search-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </span>
+          <label for="search-input" class="sr-only">Search library (supports regex)</label>
+          <input type="text" id="search-input" class="search-input" placeholder="Search or type a regex pattern…" autocomplete="off" />
+          <div class="search-options">
+            <label class="toggle-label">
+              <input type="checkbox" id="search-case" /> <span>Aa</span>
+            </label>
+            <span class="search-hint" id="search-hint" aria-live="polite"></span>
+          </div>
+        </div>
+        <div class="filter-row">
+          <label for="filter-status" class="sr-only">Filter by status</label>
+          <select id="filter-status" class="filter-select">
+            <option value="">All Statuses</option>
+            <option value="want">Want to Read</option>
+            <option value="reading">Reading</option>
+            <option value="finished">Finished</option>
+          </select>
+          <label for="filter-tag" class="sr-only">Filter by tag</label>
+          <select id="filter-tag" class="filter-select"><option value="">All Tags</option></select>
+          <label for="sort-by" class="sr-only">Sort records</label>
+          <select id="sort-by" class="filter-select">
+            <option value="dateAdded-desc">Newest First</option>
+            <option value="dateAdded-asc">Oldest First</option>
+            <option value="title-asc">Title A→Z</option>
+            <option value="title-desc">Title Z→A</option>
+            <option value="pages-desc">Most Pages</option>
+            <option value="pages-asc">Fewest Pages</option>
+          </select>
+          <button class="btn btn--sm btn--ghost" id="clear-filters">Clear</button>
+        </div>
+      </div>
+
+      <p class="records-count" id="records-count" aria-live="polite">Loading…</p>
+
+      <div class="table-wrap" role="region" aria-label="Library records" tabindex="0">
+        <table class="records-table" id="records-table">
+          <thead>
+            <tr>
+              <th scope="col" class="col-spine" aria-label="Status colour"></th>
+              <th scope="col" class="col-title">Title</th>
+              <th scope="col" class="col-author">Author</th>
+              <th scope="col" class="col-pages">Pages</th>
+              <th scope="col" class="col-tag">Tag</th>
+              <th scope="col" class="col-status">Status</th>
+              <th scope="col" class="col-date">Added</th>
+              <th scope="col" class="col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="records-body"></tbody>
+        </table>
+        <p class="empty-state" id="table-empty" hidden>No resources match your search.</p>
+      </div>
+    </section>
+
+    <!-- ADD RESOURCE -->
+    <section id="page-add" class="page" aria-labelledby="add-heading">
+      <header class="page-header">
+        <h1 id="add-heading">Add Resource</h1>
+        <p class="page-subtitle">Track a new book, paper, or article for your capstone</p>
+      </header>
+      <form class="resource-form" id="resource-form" novalidate aria-label="Add a new resource">
+        <div class="form-group">
+          <label for="f-title" class="form-label">Title <span class="required" aria-hidden="true">*</span></label>
+          <input type="text" id="f-title" class="form-input" required aria-required="true" aria-describedby="f-title-err" placeholder="e.g. The Lean Startup" />
+          <span class="form-error" id="f-title-err" role="alert"></span>
+        </div>
+        <div class="form-group">
+          <label for="f-author" class="form-label">Author <span class="required" aria-hidden="true">*</span></label>
+          <input type="text" id="f-author" class="form-input" required aria-required="true" aria-describedby="f-author-err" placeholder="e.g. Eric Ries" />
+          <span class="form-error" id="f-author-err" role="alert"></span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="f-pages" class="form-label">Pages <span class="required" aria-hidden="true">*</span></label>
+            <input type="text" id="f-pages" class="form-input" required aria-required="true" aria-describedby="f-pages-err" placeholder="e.g. 320" inputmode="numeric" />
+            <span class="form-error" id="f-pages-err" role="alert"></span>
+          </div>
+          <div class="form-group">
+            <label for="f-date" class="form-label">Date Added <span class="required" aria-hidden="true">*</span></label>
+            <input type="text" id="f-date" class="form-input" required aria-required="true" aria-describedby="f-date-err" placeholder="YYYY-MM-DD" />
+            <span class="form-error" id="f-date-err" role="alert"></span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="f-tag" class="form-label">Tag <span class="required" aria-hidden="true">*</span></label>
+            <input type="text" id="f-tag" class="form-input" required aria-required="true" aria-describedby="f-tag-err" placeholder="e.g. Research Methods" />
+            <span class="form-error" id="f-tag-err" role="alert"></span>
+          </div>
+          <div class="form-group">
+            <label for="f-status" class="form-label">Status <span class="required" aria-hidden="true">*</span></label>
+            <select id="f-status" class="form-input form-select" required aria-required="true" aria-describedby="f-status-err">
+              <option value="">Select status…</option>
+              <option value="want">Want to Read</option>
+              <option value="reading">Currently Reading</option>
+              <option value="finished">Finished</option>
+            </select>
+            <span class="form-error" id="f-status-err" role="alert"></span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="f-notes" class="form-label">Notes <span class="optional">(optional)</span></label>
+          <textarea id="f-notes" class="form-input form-textarea" aria-describedby="f-notes-hint f-notes-err" placeholder="Key takeaways, quotes, or reflections…" rows="4"></textarea>
+          <span class="form-hint" id="f-notes-hint">Duplicate-word detection active (e.g. "the the" will be flagged).</span>
+          <span class="form-error" id="f-notes-err" role="alert"></span>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn--primary" id="submit-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg>
+            Save Resource
           </button>
         </div>
       </form>
+
+      <aside class="converter-card" aria-labelledby="converter-heading">
+        <h2 id="converter-heading" class="converter-card__title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Page Converter
+        </h2>
+        <div class="converter-body">
+          <label for="conv-input" class="form-label">Enter page count</label>
+          <input type="number" id="conv-input" class="form-input converter-input" min="0" placeholder="e.g. 320" />
+          <div class="conversion-results" id="conversion-results" aria-live="polite"></div>
+        </div>
+      </aside>
     </section>
 
-    <!-- ══ SECTION 4: Settings ══ -->
-    <section id="settings" class="section" aria-labelledby="settings-heading">
-      <div class="section-header">
+    <!-- SETTINGS -->
+    <section id="page-settings" class="page" aria-labelledby="settings-heading">
+      <header class="page-header">
         <h1 id="settings-heading">Settings</h1>
-        <p class="section-sub">Manage your reading goals and data</p>
-      </div>
-
-      <!-- Capstone goal -->
-      <div class="settings-group">
-        <h2>🎯 Capstone Reading Goal</h2>
-        <p class="hint">How many books do you want to finish before your capstone defense?</p>
-        <div class="form-group">
-          <label for="pageTarget">Books goal</label>
-          <input
-            type="number"
-            id="pageTarget"
-            min="1"
-            placeholder="e.g. 20"
-            aria-describedby="target-hint"
-          />
-          <span id="target-hint" class="hint">
-            e.g. 20 books before defense day
-          </span>
+        <p class="page-subtitle">Customise your tracker</p>
+      </header>
+      <div class="settings-grid">
+        <div class="settings-card">
+          <h2 class="settings-card__title">Reading Goal</h2>
+          <p class="settings-card__desc">Set a target number of resources to finish for your capstone.</p>
+          <div class="form-group">
+            <label for="s-goal" class="form-label">Target resources</label>
+            <input type="number" id="s-goal" class="form-input" min="0" placeholder="e.g. 25" aria-describedby="s-goal-hint" />
+            <span class="form-hint" id="s-goal-hint">Set to 0 to disable.</span>
+          </div>
+          <button class="btn btn--primary" id="save-goal-btn">Save Goal</button>
         </div>
-        <button class="btn btn-primary" id="saveTargetBtn">Save Goal</button>
-      </div>
-
-      <!-- Units -->
-      <div class="settings-group">
-        <h2>📐 Page Units</h2>
-        <p class="hint">Convert total pages to estimated reading hours:</p>
-        <div class="form-group">
-          <label for="pagesPerHour">Pages per hour (your reading speed)</label>
-          <input
-            type="number"
-            id="pagesPerHour"
-            min="1"
-            value="30"
-            aria-describedby="units-hint"
-          />
-          <span id="units-hint" class="hint">
-            Average reader: 20–40 pages/hour
-          </span>
+        <div class="settings-card">
+          <h2 class="settings-card__title">Reading Speed</h2>
+          <p class="settings-card__desc">Used by the page converter on the Add Resource page.</p>
+          <div class="form-group">
+            <label for="s-ppm" class="form-label">Pages per minute</label>
+            <input type="number" id="s-ppm" class="form-input" min="0.1" step="0.1" placeholder="e.g. 1.5" aria-describedby="s-ppm-hint" />
+            <span class="form-hint" id="s-ppm-hint">Average adult reads ~1–2 pages/min.</span>
+          </div>
+          <button class="btn btn--primary" id="save-units-btn">Save Speed</button>
         </div>
-        <button class="btn btn-secondary" id="saveUnitsBtn">Save Units</button>
-        <p id="hours-result" class="hint" aria-live="polite" style="margin-top:8px"></p>
-      </div>
-
-      <!-- Import / Export -->
-      <div class="settings-group">
-        <h2>📦 Import / Export</h2>
-        <p class="hint">Back up your library or move it to another device.</p>
-        <div class="import-export-row">
-          <button class="btn btn-primary" id="exportBtn">⬇️ Export JSON</button>
-          <label class="btn btn-secondary file-label" for="importFile">
-            ⬆️ Import JSON
-            <input
-              type="file"
-              id="importFile"
-              accept=".json"
-              class="sr-only"
-              aria-label="Import JSON file"
-            />
-          </label>
+        <div class="settings-card settings-card--danger">
+          <h2 class="settings-card__title">Danger Zone</h2>
+          <p class="settings-card__desc">Permanent — cannot be undone.</p>
+          <button class="btn btn--danger" id="clear-data-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+            Clear All Data
+          </button>
         </div>
-        <p id="import-status" role="status" aria-live="polite" class="hint"></p>
-      </div>
-
-      <!-- Clear all -->
-      <div class="settings-group danger-zone">
-        <h2>⚠️ Danger Zone</h2>
-        <button class="btn btn-danger" id="clearAllBtn">🗑️ Clear All Data</button>
-        <p class="hint">This will permanently delete all your books.</p>
       </div>
     </section>
 
-    <!-- ══ SECTION 5: About ══ -->
-    <section id="about" class="section" aria-labelledby="about-heading">
-      <div class="section-header">
-        <h1 id="about-heading">About</h1>
-      </div>
-
-      <div class="about-card">
-        <div class="alu-banner">
-          <span class="alu-logo">📚</span>
-          <div>
-            <h2 style="margin:0">ALU Library</h2>
-            <p style="margin:0;font-size:0.9rem;opacity:0.8">
-              Capstone Reading Tracker · Final Year 2025/26
-            </p>
+    <!-- ABOUT -->
+    <section id="page-about" class="page" aria-labelledby="about-heading">
+      <header class="page-header"><h1 id="about-heading">About</h1></header>
+      <div class="about-content">
+        <div class="about-hero">
+          <div class="about-spines" aria-hidden="true">
+            <span class="spine spine--want"></span>
+            <span class="spine spine--reading"></span>
+            <span class="spine spine--reading"></span>
+            <span class="spine spine--done"></span>
+            <span class="spine spine--want"></span>
+            <span class="spine spine--done"></span>
+          </div>
+          <div class="about-hero__text">
+            <h2 class="about-tagline">Track your reading journey through your final year.</h2>
+            <p>Built for ALU students managing research papers, textbooks, and articles for their capstone project.</p>
           </div>
         </div>
-
-        <h2>What is this?</h2>
-        <p>
-          A personal reading tracker built specifically for ALU final-year
-          students managing their capstone research. Track every book you
-          read, are reading, or plan to read. Search with regex, sort by
-          any field, and export your library as JSON.
-        </p>
-
-        <h2>Features</h2>
-        <ul>
-          <li>📋 Track books across 3 statuses — Want to Read, Reading, Finished</li>
-          <li>🔍 Live regex search with match highlighting</li>
-          <li>📊 Dashboard with stats, progress bar, 7-day chart</li>
-          <li>🎯 Set a capstone reading goal and track progress</li>
-          <li>✏️ Inline edit and delete with confirmation</li>
-          <li>📦 Import/export JSON for backup</li>
-          <li>🌙 Dark/light mode toggle</li>
-          <li>⌨️ Full keyboard navigation</li>
-          <li>📱 Responsive — works on phone, tablet, desktop</li>
-        </ul>
-
-        <h2>Regex Patterns You Can Use</h2>
-        <ul>
-          <li><code>/^The/i</code> — books starting with "The"</li>
-          <li><code>/(design|product)/i</code> — design OR product books</li>
-          <li><code>/\b(\w+)\s+\1\b/i</code> — duplicate words in title</li>
-          <li><code>/^[A-Z][a-z]+\s[A-Z]/</code> — "Firstname Lastname" author format</li>
-        </ul>
-
-        <h2>Contact</h2>
-        <ul>
-          <li>
-            GitHub:
-            <a href="https://github.com/akotet27" target="_blank" rel="noopener noreferrer">
-              github.com/akotet27
+        <div class="about-features">
+          <div class="about-feature">
+            <span class="about-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg></span>
+            <div><h3>Want to Read</h3><p>Save resources for later — build your reading queue before your capstone sprint.</p></div>
+          </div>
+          <div class="about-feature">
+            <span class="about-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
+            <div><h3>Currently Reading</h3><p>Mark what you're actively working through so nothing slips.</p></div>
+          </div>
+          <div class="about-feature">
+            <span class="about-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg></span>
+            <div><h3>Finished</h3><p>Log completed resources with notes and key takeaways for your write-up.</p></div>
+          </div>
+        </div>
+        <div class="about-contact">
+          <h2>Contact</h2>
+          <p>Built as part of ALU's Building Responsive UI module.</p>
+          <div class="contact-links">
+            <a href="https://github.com" class="contact-link" target="_blank" rel="noopener noreferrer">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+              GitHub
             </a>
-          </li>
-          <li>
-            Email:
-            <a href="mailto:akotet@alustudent.com">akotet@alustudent.com</a>
-          </li>
-        </ul>
+            <a href="mailto:student@alustudent.com" class="contact-link">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              student@alustudent.com
+            </a>
+          </div>
+        </div>
       </div>
     </section>
-
   </main>
 
-  <!-- ── FOOTER ── -->
-  <footer class="site-footer" role="contentinfo">
-    <p>
-      📚 ALU Library — Capstone Reading Tracker &copy; 2026 ·
-      Built by Akotet Shimelis · African Leadership University
-    </p>
-  </footer>
+  <!-- VIEW MODAL -->
+  <div class="modal-overlay" id="view-modal" role="dialog" aria-modal="true" aria-labelledby="view-modal-title" hidden>
+    <div class="modal modal--view">
+      <button class="modal__close" id="view-modal-close" aria-label="Close book details">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+      <div class="view-modal__spine" id="view-spine" aria-hidden="true"></div>
+      <div class="view-modal__body">
+        <div class="view-modal__status" id="view-status"></div>
+        <h2 class="view-modal__title" id="view-modal-title"></h2>
+        <p class="view-modal__author" id="view-author"></p>
+        <div class="view-modal__meta">
+          <span class="view-meta-item" id="view-pages"></span>
+          <span class="view-meta-item" id="view-tag"></span>
+          <span class="view-meta-item" id="view-date"></span>
+        </div>
+        <div class="view-modal__notes" id="view-notes" hidden>
+          <h3>Notes</h3>
+          <p id="view-notes-text"></p>
+        </div>
+      </div>
+      <div class="modal__actions">
+        <button class="btn btn--primary" id="view-edit-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
+          Edit
+        </button>
+        <button class="btn btn--ghost" id="view-close-btn">Close</button>
+      </div>
+    </div>
+  </div>
 
-  <script type="module" src="scripts/app.js"></script>
+  <!-- EDIT MODAL -->
+  <div class="modal-overlay" id="edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title" hidden>
+    <div class="modal modal--edit">
+      <button class="modal__close" id="edit-modal-close" aria-label="Close edit form">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+      <h2 class="modal__title" id="edit-modal-title">Edit Resource</h2>
+      <form id="edit-form" novalidate aria-label="Edit resource form">
+        <input type="hidden" id="em-id" />
+        <div class="form-group">
+          <label for="em-title" class="form-label">Title <span class="required" aria-hidden="true">*</span></label>
+          <input type="text" id="em-title" class="form-input" required aria-required="true" aria-describedby="em-title-err" />
+          <span class="form-error" id="em-title-err" role="alert"></span>
+        </div>
+        <div class="form-group">
+          <label for="em-author" class="form-label">Author <span class="required" aria-hidden="true">*</span></label>
+          <input type="text" id="em-author" class="form-input" required aria-required="true" aria-describedby="em-author-err" />
+          <span class="form-error" id="em-author-err" role="alert"></span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="em-pages" class="form-label">Pages <span class="required" aria-hidden="true">*</span></label>
+            <input type="text" id="em-pages" class="form-input" required aria-required="true" aria-describedby="em-pages-err" inputmode="numeric" />
+            <span class="form-error" id="em-pages-err" role="alert"></span>
+          </div>
+          <div class="form-group">
+            <label for="em-date" class="form-label">Date Added <span class="required" aria-hidden="true">*</span></label>
+            <input type="text" id="em-date" class="form-input" required aria-required="true" aria-describedby="em-date-err" placeholder="YYYY-MM-DD" />
+            <span class="form-error" id="em-date-err" role="alert"></span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="em-tag" class="form-label">Tag <span class="required" aria-hidden="true">*</span></label>
+            <input type="text" id="em-tag" class="form-input" required aria-required="true" aria-describedby="em-tag-err" />
+            <span class="form-error" id="em-tag-err" role="alert"></span>
+          </div>
+          <div class="form-group">
+            <label for="em-status" class="form-label">Status <span class="required" aria-hidden="true">*</span></label>
+            <select id="em-status" class="form-input form-select" required aria-required="true">
+              <option value="want">Want to Read</option>
+              <option value="reading">Currently Reading</option>
+              <option value="finished">Finished</option>
+            </select>
+            <span class="form-error" id="em-status-err" role="alert"></span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="em-notes" class="form-label">Notes <span class="optional">(optional)</span></label>
+          <textarea id="em-notes" class="form-input form-textarea" aria-describedby="em-notes-err" rows="3"></textarea>
+          <span class="form-error" id="em-notes-err" role="alert"></span>
+        </div>
+        <div class="modal__actions modal__actions--form">
+          <button type="submit" class="btn btn--primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg>
+            Save Changes
+          </button>
+          <button type="button" class="btn btn--ghost" id="edit-modal-cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
+  <!-- CONFIRM MODAL -->
+  <div class="modal-overlay" id="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title" hidden>
+    <div class="modal modal--confirm">
+      <h2 id="confirm-title" class="modal__title">Confirm Action</h2>
+      <p class="modal__body" id="confirm-body"></p>
+      <div class="modal__actions">
+        <button class="btn btn--danger" id="confirm-yes">Delete</button>
+        <button class="btn btn--ghost" id="confirm-no">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts loaded as regular scripts in dependency order — IIFE pattern -->
+  <script src="scripts/storage.js"></script>
+  <script src="scripts/validators.js"></script>
+  <script src="scripts/state.js"></script>
+  <script src="scripts/search.js"></script>
+  <script src="scripts/ui.js"></script>
+  <script src="scripts/app.js"></script>
 </body>
 </html>

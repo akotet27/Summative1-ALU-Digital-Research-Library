@@ -1,392 +1,183 @@
-// ── ui.js ────────────────────────────────────────────────
-// All DOM rendering functions.
-// Reads from state, writes to DOM. Never touches localStorage.
+/* scripts/ui.js — IIFE Module: all DOM rendering */
+;(function (App) {
+  'use strict';
 
-import { state, getFilteredBooks, getStats } from './state.js';
-import { highlight, escapeHTML }             from './search.js';
-import { compileSearch }                     from './search.js';
+  var STATUS_LABELS = { want: 'Want to Read', reading: 'Currently Reading', finished: 'Finished' };
 
-// ── ANNOUNCE TO SCREEN READERS ───────────────────────────
+  var ICONS = {
+    eye:    svg('<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>'),
+    pencil: svg('<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>'),
+    trash:  svg('<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>'),
+  };
 
-/** Polite announcement — for non-urgent status updates */
-export function announce(message) {
-  const el = document.getElementById('status-msg');
-  if (!el) return;
-  el.textContent = '';
-  setTimeout(() => { el.textContent = message; }, 50);
-}
-
-/** Assertive announcement — for urgent alerts (cap exceeded) */
-export function announceAlert(message) {
-  const el = document.getElementById('cap-alert');
-  if (!el) return;
-  el.textContent = '';
-  setTimeout(() => { el.textContent = message; }, 50);
-}
-
-// ── TOAST NOTIFICATIONS ──────────────────────────────────
-
-export function showToast(message, type = 'success') {
-  // Remove existing toast
-  document.querySelector('.toast')?.remove();
-
-  const toast = document.createElement('div');
-  toast.className  = `toast ${type}`;
-  toast.textContent = message;
-  toast.setAttribute('role', 'status');
-  document.body.appendChild(toast);
-
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transition = 'opacity 0.3s';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
-}
-
-// ── SECTION NAVIGATION ───────────────────────────────────
-
-export function showSection(sectionId) {
-  // Hide all sections
-  document.querySelectorAll('.section').forEach(s => {
-    s.classList.remove('active');
-  });
-
-  // Show target section
-  const target = document.getElementById(sectionId);
-  if (target) {
-    target.classList.add('active');
-    target.focus?.();
+  function svg(paths) {
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
   }
 
-  // Update nav links
-  document.querySelectorAll('.nav-link').forEach(link => {
-    const isActive = link.dataset.section === sectionId;
-    link.classList.toggle('active', isActive);
-    link.setAttribute('aria-current', isActive ? 'page' : 'false');
-  });
-}
-
-// ── DASHBOARD ────────────────────────────────────────────
-
-export function renderDashboard() {
-  const stats = getStats();
-
-  // Stat numbers
-  setText('stat-total',    stats.total);
-  setText('stat-finished', stats.finished);
-  setText('stat-reading',  stats.reading);
-  setText('stat-want',     stats.want);
-  setText('stat-pages',    stats.pages.toLocaleString());
-  setText('stat-top-tag',  stats.topTag);
-
-  // Reading goal progress
-  renderCapBar(stats.finished);
-
-  // 7-day chart
-  renderWeekChart(stats.days);
-
-  // Hours estimate in settings
-  const hoursEl = document.getElementById('hours-result');
-  if (hoursEl) {
-    hoursEl.textContent =
-      `At ${state.settings.pagesPerHour} pages/hour, ` +
-      `your ${stats.pages.toLocaleString()} pages = ~${stats.hours} hours of reading.`;
-  }
-}
-
-function renderCapBar(finished) {
-  const goal    = state.settings.goal || 20;
-  const pct     = Math.min(Math.round((finished / goal) * 100), 100);
-  const bar     = document.getElementById('capBar');
-  const wrapper = document.getElementById('capBarWrapper');
-  const msg     = document.getElementById('cap-message');
-
-  if (!bar || !msg) return;
-
-  bar.style.width = pct + '%';
-  wrapper?.setAttribute('aria-valuenow', pct);
-
-  const over = finished >= goal;
-  bar.classList.toggle('over', over);
-
-  if (goal === 0) {
-    msg.textContent = 'Set a goal in Settings to track progress.';
-    return;
+  function fmtDate(str) {
+    if (!str) return '—';
+    try { return new Date(str + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+    catch (e) { return str; }
   }
 
-  if (over) {
-    const extra = finished - goal;
-    msg.textContent =
-      `🎉 Goal reached! ${finished}/${goal} books finished. ` +
-      `${extra > 0 ? `${extra} books over target!` : 'Exactly on target!'}`;
-    msg.style.color = 'var(--green)';
-    // Assertive alert for screen readers
-    announceAlert(
-      `Capstone goal reached! You have finished ${finished} out of ${goal} books.`
-    );
-  } else {
-    const left = goal - finished;
-    msg.textContent =
-      `${finished}/${goal} books finished — ${left} more to reach your capstone goal.`;
-    msg.style.color = 'var(--text-muted)';
-    announce(`${left} books left to reach your reading goal.`);
-  }
-}
+  var toastTimer;
 
-function renderWeekChart(days) {
-  const chart = document.getElementById('weekChart');
-  if (!chart) return;
+  App.ui = {
 
-  const max = Math.max(...days.map(d => d.count), 1);
-  chart.innerHTML = '';
+    showToast: function (msg) {
+      var el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2800);
+    },
 
-  days.forEach(day => {
-    const col = document.createElement('div');
-    col.className = 'bar-col';
+    announce: function (msg, assertive) {
+      var el = document.getElementById(assertive ? 'live-assertive' : 'live-polite');
+      el.textContent = '';
+      requestAnimationFrame(function () { el.textContent = msg; });
+    },
 
-    const heightPct = Math.round((day.count / max) * 100);
+    renderTable: function (records, re) {
+      var tbody = document.getElementById('records-body');
+      var empty = document.getElementById('table-empty');
+      var count = document.getElementById('records-count');
+      var hl    = App.validators.highlight;
+      var esc   = App.validators.escapeHtml;
 
-    col.innerHTML = `
-      <span class="bar-count">${day.count > 0 ? day.count : ''}</span>
-      <div
-        class="bar-fill"
-        style="height:${heightPct}%"
-        title="${day.label}: ${day.count} book(s)"
-        aria-label="${day.label}: ${day.count} books added"
-      ></div>
-      <span class="bar-label">${day.label}</span>
-    `;
-    chart.appendChild(col);
-  });
-}
+      tbody.innerHTML = '';
+      count.textContent = records.length + ' resource' + (records.length !== 1 ? 's' : '');
 
-// ── RECORDS ──────────────────────────────────────────────
+      if (records.length === 0) { empty.hidden = false; return; }
+      empty.hidden = true;
 
-export function renderRecords(searchRegex = null) {
-  const books     = getFilteredBooks(searchRegex);
-  const container = document.getElementById('records-container');
-  const emptyEl   = document.getElementById('empty-state');
+      var frag = document.createDocumentFragment();
+      records.forEach(function (rec) {
+        var tr = document.createElement('tr');
+        tr.dataset.id = rec.id;
+        tr.innerHTML =
+          '<td class="col-spine"><span class="row-spine row-spine--' + rec.status + '" aria-hidden="true"></span></td>' +
+          '<td class="col-title">' + hl(rec.title, re) + '</td>' +
+          '<td class="col-author">' + hl(rec.author, re) + '</td>' +
+          '<td class="col-pages">' + Number(rec.pages).toLocaleString() + '</td>' +
+          '<td class="col-tag">' + hl(rec.tag, re) + '</td>' +
+          '<td class="col-status"><span class="status-badge status-badge--' + rec.status + '" aria-label="Status: ' + STATUS_LABELS[rec.status] + '"><span class="status-dot" aria-hidden="true"></span>' + STATUS_LABELS[rec.status] + '</span></td>' +
+          '<td class="col-date">' + fmtDate(rec.dateAdded) + '</td>' +
+          '<td class="col-actions"><div class="row-actions">' +
+            '<button class="btn-icon" data-action="view"   data-id="' + esc(rec.id) + '" aria-label="View ' + esc(rec.title) + '" title="View">'   + ICONS.eye    + '</button>' +
+            '<button class="btn-icon" data-action="edit"   data-id="' + esc(rec.id) + '" aria-label="Edit ' + esc(rec.title) + '" title="Edit">'   + ICONS.pencil + '</button>' +
+            '<button class="btn-icon btn-icon--delete" data-action="delete" data-id="' + esc(rec.id) + '" aria-label="Delete ' + esc(rec.title) + '" title="Delete">' + ICONS.trash  + '</button>' +
+          '</div></td>';
+        frag.appendChild(tr);
+      });
+      tbody.appendChild(frag);
+    },
 
-  if (!container) return;
+    renderStats: function (records, settings) {
+      var want   = records.filter(function (r) { return r.status === 'want'; }).length;
+      var reading= records.filter(function (r) { return r.status === 'reading'; }).length;
+      var done   = records.filter(function (r) { return r.status === 'finished'; }).length;
+      var pages  = records.filter(function (r) { return r.status === 'finished'; })
+                          .reduce(function (s, r) { return s + Number(r.pages); }, 0);
+      var tagCounts = {};
+      records.forEach(function (r) { tagCounts[r.tag] = (tagCounts[r.tag] || 0) + 1; });
+      var topTag = Object.entries(tagCounts).sort(function (a, b) { return b[1] - a[1]; })[0];
 
-  if (books.length === 0) {
-    container.innerHTML = '';
-    if (emptyEl) emptyEl.hidden = false;
-    announce('No books found.');
-    return;
-  }
+      document.getElementById('stat-total').textContent   = records.length;
+      document.getElementById('stat-want').textContent    = want;
+      document.getElementById('stat-reading').textContent = reading;
+      document.getElementById('stat-done').textContent    = done;
+      document.getElementById('stat-pages').textContent   = pages.toLocaleString();
+      document.getElementById('stat-top-tag').textContent = topTag ? topTag[0] : '—';
 
-  if (emptyEl) emptyEl.hidden = true;
+      // Goal / cap
+      var goal    = Number((settings || {}).goal || 0);
+      var capMsg  = document.getElementById('cap-message');
+      var capFill = document.getElementById('cap-fill');
+      var capText = document.getElementById('cap-text');
+      var capBar  = document.querySelector('.cap-bar');
 
-  // Desktop — table
-  const tableHTML = renderTable(books, searchRegex);
-  // Mobile — cards
-  const cardsHTML = renderCards(books, searchRegex);
+      if (goal > 0) {
+        var pct = Math.min(100, Math.round((done / goal) * 100));
+        capFill.style.width = pct + '%';
+        if (capBar) capBar.setAttribute('aria-valuenow', pct);
+        capText.textContent = done + ' / ' + goal;
+        capMsg.hidden = false;
+        if (done >= goal) {
+          capMsg.className = 'cap-message cap-message--over';
+          capMsg.textContent = 'Goal reached! You\'ve finished ' + done + ' of ' + goal + ' resources — ready for your capstone!';
+          App.ui.announce('Goal reached! Finished ' + done + ' of ' + goal + '.', true);
+        } else {
+          var rem = goal - done;
+          capMsg.className = 'cap-message cap-message--under';
+          capMsg.textContent = rem + ' resource' + (rem !== 1 ? 's' : '') + ' remaining to hit your goal of ' + goal + '.';
+        }
+      } else {
+        capFill.style.width = '0%';
+        capText.textContent = 'No goal set';
+        capMsg.hidden = true;
+      }
 
-  container.innerHTML = `
-    <div class="records-table-wrapper">
-      ${tableHTML}
-    </div>
-    <div class="cards-view">
-      ${cardsHTML}
-    </div>
-  `;
+      App.ui.renderBarChart(records);
+      App.ui.renderBookshelf(records);
+    },
 
-  announce(`Showing ${books.length} book${books.length !== 1 ? 's' : ''}.`);
-}
+    renderBarChart: function (records) {
+      var el    = document.getElementById('bar-chart');
+      var today = new Date();
+      var days  = [];
+      for (var i = 6; i >= 0; i--) {
+        var d   = new Date(today); d.setDate(d.getDate() - i);
+        var key = d.toISOString().slice(0, 10);
+        var cnt = records.filter(function (r) { return r.dateAdded === key; }).length;
+        days.push({ label: d.toLocaleDateString('en-US', { weekday: 'short' }), count: cnt });
+      }
+      var max = Math.max.apply(null, days.map(function (d) { return d.count; }).concat([1]));
+      el.innerHTML = days.map(function (d) {
+        var h = Math.round((d.count / max) * 80);
+        return '<div class="bar-chart__bar-wrap">' +
+          '<span class="bar-chart__val" aria-hidden="true">' + (d.count || '') + '</span>' +
+          '<div class="bar-chart__bar" style="height:' + h + 'px" role="presentation" title="' + d.label + ': ' + d.count + '"></div>' +
+          '<span class="bar-chart__day" aria-hidden="true">' + d.label + '</span>' +
+          '</div>';
+      }).join('');
+    },
 
-function renderTable(books, regex) {
-  const rows = books.map(book => {
-    const title  = regex ? highlight(book.title,  regex) : escapeHTML(book.title);
-    const author = regex ? highlight(book.author, regex) : escapeHTML(book.author);
-    const tag    = regex ? highlight(book.tag,    regex) : escapeHTML(book.tag || '—');
-    const notes  = regex ? highlight(book.notes || '', regex) : escapeHTML(book.notes || '');
+    renderBookshelf: function (records) {
+      var el    = document.getElementById('bookshelf');
+      var empty = document.getElementById('shelf-empty');
+      var esc   = App.validators.escapeHtml;
 
-    return `
-      <tr data-id="${book.id}">
-        <td><strong>${title}</strong></td>
-        <td>${author}</td>
-        <td>${book.pages.toLocaleString()}</td>
-        <td>${renderStatusBadge(book.status)}</td>
-        <td>${book.tag ? `<span class="tag-badge">${tag}</span>` : '—'}</td>
-        <td>${book.dateAdded}</td>
-        <td>
-          <div class="action-btns">
-            <button
-              class="btn btn-sm btn-secondary edit-btn"
-              data-id="${book.id}"
-              aria-label="Edit ${escapeHTML(book.title)}"
-            >
-              ✏️ Edit
-            </button>
-            <button
-              class="btn btn-sm btn-danger delete-btn"
-              data-id="${book.id}"
-              aria-label="Delete ${escapeHTML(book.title)}"
-            >
-              🗑️ Delete
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
+      if (records.length === 0) {
+        el.innerHTML = ''; el.appendChild(empty); empty.hidden = false; return;
+      }
+      empty.hidden = true;
+      var maxP = Math.max.apply(null, records.map(function (r) { return Number(r.pages); }).concat([100]));
 
-  return `
-    <table class="records-table" aria-label="Book records">
-      <thead>
-        <tr>
-          <th scope="col">Title</th>
-          <th scope="col">Author</th>
-          <th scope="col">Pages</th>
-          <th scope="col">Status</th>
-          <th scope="col">Tag</th>
-          <th scope="col">Date Added</th>
-          <th scope="col">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows}
-      </tbody>
-    </table>
-  `;
-}
+      el.innerHTML = records.map(function (r) {
+        var h     = 50 + Math.round((Number(r.pages) / maxP) * 70);
+        var short = r.title.length > 12 ? r.title.slice(0, 12) + '…' : r.title;
+        return '<div class="book-spine book-spine--' + r.status + '" ' +
+          'style="min-height:' + h + 'px" ' +
+          'data-id="' + esc(r.id) + '" ' +
+          'data-title="' + esc(short) + '" ' +
+          'title="' + esc(r.title) + ' — ' + esc(r.author) + '" ' +
+          'tabindex="0" role="button" ' +
+          'aria-label="' + esc(r.title) + ' by ' + esc(r.author) + ', ' + STATUS_LABELS[r.status] + '. Press Enter to view.">' +
+          '</div>';
+      }).join('');
+    },
 
-function renderCards(books, regex) {
-  return books.map(book => {
-    const title  = regex ? highlight(book.title,  regex) : escapeHTML(book.title);
-    const author = regex ? highlight(book.author, regex) : escapeHTML(book.author);
-    const tag    = regex ? highlight(book.tag || '', regex) : escapeHTML(book.tag || '');
-    const notes  = regex ? highlight(book.notes || '', regex) : escapeHTML(book.notes || '');
-
-    return `
-      <article class="book-card" data-id="${book.id}" aria-label="${escapeHTML(book.title)}">
-        <h3>${title}</h3>
-        <p class="book-meta">
-          by ${author} &nbsp;·&nbsp;
-          ${book.pages.toLocaleString()} pages &nbsp;·&nbsp;
-          ${book.dateAdded}
-        </p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-          ${renderStatusBadge(book.status)}
-          ${book.tag ? `<span class="tag-badge">${tag}</span>` : ''}
-        </div>
-        ${book.notes
-          ? `<p class="book-notes">${notes}</p>`
-          : ''}
-        <div class="action-btns" style="margin-top:10px">
-          <button
-            class="btn btn-sm btn-secondary edit-btn"
-            data-id="${book.id}"
-            aria-label="Edit ${escapeHTML(book.title)}"
-          >
-            ✏️ Edit
-          </button>
-          <button
-            class="btn btn-sm btn-danger delete-btn"
-            data-id="${book.id}"
-            aria-label="Delete ${escapeHTML(book.title)}"
-          >
-            🗑️ Delete
-          </button>
-        </div>
-      </article>
-    `;
-  }).join('');
-}
-
-function renderStatusBadge(status) {
-  const cls = {
-    'Finished':     'finished',
-    'Reading':      'reading',
-    'Want to Read': 'want-to-read',
-  }[status] || '';
-  return `<span class="status-badge ${cls}">${escapeHTML(status)}</span>`;
-}
-
-// ── FORM ─────────────────────────────────────────────────
-
-/** Fill the form with a book's data for editing */
-export function fillFormForEdit(book) {
-  document.getElementById('titleInput').value  = book.title;
-  document.getElementById('authorInput').value = book.author;
-  document.getElementById('pagesInput').value  = book.pages;
-  document.getElementById('statusSelect').value= book.status;
-  document.getElementById('tagInput').value    = book.tag || '';
-  document.getElementById('dateInput').value   = book.dateAdded;
-  document.getElementById('notesInput').value  = book.notes || '';
-  document.getElementById('editId').value      = book.id;
-
-  document.getElementById('form-heading').textContent = 'Edit Book';
-  document.getElementById('submitBtn').textContent    = '💾 Update Book';
-  document.getElementById('cancelBtn').hidden         = false;
-}
-
-/** Reset form back to Add mode */
-export function resetForm() {
-  document.getElementById('bookForm').reset();
-  document.getElementById('editId').value             = '';
-  document.getElementById('form-heading').textContent = 'Add a Book';
-  document.getElementById('submitBtn').textContent    = '💾 Save Book';
-  document.getElementById('cancelBtn').hidden         = true;
-
-  // Clear all error messages
-  document.querySelectorAll('.error-msg').forEach(el => {
-    el.textContent = '';
-  });
-
-  // Clear valid/invalid classes
-  document.querySelectorAll('.form-group input, .form-group textarea, .form-group select')
-    .forEach(el => {
-      el.classList.remove('valid', 'invalid');
-    });
-
-  // Set today's date as default
-  const dateInput = document.getElementById('dateInput');
-  if (dateInput) {
-    dateInput.value = new Date().toISOString().slice(0, 10);
-  }
-}
-
-/** Show a single field error */
-export function showFieldError(fieldName, message) {
-  const errorEl = document.getElementById(`${fieldName}-error`);
-  const inputEl = document.getElementById(`${fieldName}Input`)
-                || document.getElementById(`${fieldName}Select`);
-
-  if (errorEl) errorEl.textContent = message;
-  if (inputEl) {
-    inputEl.classList.toggle('invalid', !!message);
-    inputEl.classList.toggle('valid',   !message);
-  }
-}
-
-/** Clear a single field error */
-export function clearFieldError(fieldName) {
-  showFieldError(fieldName, '');
-}
-
-// ── SETTINGS ─────────────────────────────────────────────
-
-export function fillSettings() {
-  const goalEl  = document.getElementById('pageTarget');
-  const pphEl   = document.getElementById('pagesPerHour');
-
-  if (goalEl) goalEl.value = state.settings.goal || 20;
-  if (pphEl)  pphEl.value  = state.settings.pagesPerHour || 30;
-}
-
-// ── THEME ────────────────────────────────────────────────
-
-export function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  const btn = document.getElementById('themeToggle');
-  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
-}
-
-// ── HELPERS ──────────────────────────────────────────────
-
-function setText(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = value;
-}
+    populateTagFilter: function (records) {
+      var select  = document.getElementById('filter-tag');
+      var current = select.value;
+      var tags    = [];
+      records.forEach(function (r) { if (tags.indexOf(r.tag) === -1) tags.push(r.tag); });
+      tags.sort();
+      select.innerHTML = '<option value="">All Tags</option>' +
+        tags.map(function (t) {
+          return '<option value="' + App.validators.escapeHtml(t) + '"' + (t === current ? ' selected' : '') + '>' + App.validators.escapeHtml(t) + '</option>';
+        }).join('');
+    }
+  };
+})(window.App = window.App || {});
