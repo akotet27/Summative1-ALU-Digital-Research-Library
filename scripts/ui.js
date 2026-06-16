@@ -1,242 +1,352 @@
-// scripts/ui.js
-import { highlight } from './search.js';
+// ── ui.js ────────────────────────────────────────────────
+// All DOM rendering functions.
+// Reads from state, writes to DOM. Never touches localStorage.
 
-const STATUS_LABELS = {
-  want:     '📋 Want to Read',
-  reading:  '📖 Reading',
-  finished: '✅ Finished',
-};
+import { state, getFilteredBooks, getStats } from './state.js';
+import { highlight, escapeHTML }             from './search.js';
+import { compileSearch }                     from './search.js';
 
-// ── Toast ──────────────────────────────────────────────────────
-let toastTimer;
-export const showToast = (msg) => {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
-};
+// ── ANNOUNCE TO SCREEN READERS ───────────────────────────
 
-// ── ARIA live announce ─────────────────────────────────────────
-export const announce = (msg, assertive = false) => {
-  const el = document.getElementById(assertive ? 'live-assertive' : 'live-polite');
+/** Polite announcement — for non-urgent status updates */
+export function announce(message) {
+  const el = document.getElementById('status-msg');
+  if (!el) return;
   el.textContent = '';
-  requestAnimationFrame(() => { el.textContent = msg; });
-};
+  setTimeout(() => { el.textContent = message; }, 50);
+}
 
-// ── Render records table ───────────────────────────────────────
-export const renderTable = (records, re) => {
-  const tbody = document.getElementById('records-body');
-  const empty = document.getElementById('table-empty');
-  const count = document.getElementById('records-count');
+/** Assertive announcement — for urgent alerts (cap exceeded) */
+export function announceAlert(message) {
+  const el = document.getElementById('cap-alert');
+  if (!el) return;
+  el.textContent = '';
+  setTimeout(() => { el.textContent = message; }, 50);
+}
 
-  tbody.innerHTML = '';
-  count.textContent = `${records.length} resource${records.length !== 1 ? 's' : ''}`;
+// ── TOAST NOTIFICATIONS ──────────────────────────────────
 
-  if (records.length === 0) {
-    empty.hidden = false;
+export function showToast(message, type = 'success') {
+  // Remove existing toast
+  document.querySelector('.toast')?.remove();
+
+  const toast = document.createElement('div');
+  toast.className  = `toast ${type}`;
+  toast.textContent = message;
+  toast.setAttribute('role', 'status');
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// ── SECTION NAVIGATION ───────────────────────────────────
+
+export function showSection(sectionId) {
+  // Hide all sections
+  document.querySelectorAll('.section').forEach(s => {
+    s.classList.remove('active');
+  });
+
+  // Show target section
+  const target = document.getElementById(sectionId);
+  if (target) {
+    target.classList.add('active');
+    target.focus?.();
+  }
+
+  // Update nav links
+  document.querySelectorAll('.nav-link').forEach(link => {
+    const isActive = link.dataset.section === sectionId;
+    link.classList.toggle('active', isActive);
+    link.setAttribute('aria-current', isActive ? 'page' : 'false');
+  });
+}
+
+// ── DASHBOARD ────────────────────────────────────────────
+
+export function renderDashboard() {
+  const stats = getStats();
+
+  // Stat numbers
+  setText('stat-total',    stats.total);
+  setText('stat-finished', stats.finished);
+  setText('stat-reading',  stats.reading);
+  setText('stat-want',     stats.want);
+  setText('stat-pages',    stats.pages.toLocaleString());
+  setText('stat-top-tag',  stats.topTag);
+
+  // Reading goal progress
+  renderCapBar(stats.finished);
+
+  // 7-day chart
+  renderWeekChart(stats.days);
+
+  // Hours estimate in settings
+  const hoursEl = document.getElementById('hours-result');
+  if (hoursEl) {
+    hoursEl.textContent =
+      `At ${state.settings.pagesPerHour} pages/hour, ` +
+      `your ${stats.pages.toLocaleString()} pages = ~${stats.hours} hours of reading.`;
+  }
+}
+
+function renderCapBar(finished) {
+  const goal    = state.settings.goal || 20;
+  const pct     = Math.min(Math.round((finished / goal) * 100), 100);
+  const bar     = document.getElementById('capBar');
+  const wrapper = document.getElementById('capBarWrapper');
+  const msg     = document.getElementById('cap-message');
+
+  if (!bar || !msg) return;
+
+  bar.style.width = pct + '%';
+  wrapper?.setAttribute('aria-valuenow', pct);
+
+  const over = finished >= goal;
+  bar.classList.toggle('over', over);
+
+  if (goal === 0) {
+    msg.textContent = 'Set a goal in Settings to track progress.';
     return;
   }
-  empty.hidden = true;
 
-  const frag = document.createDocumentFragment();
-  for (const rec of records) {
-    const tr = document.createElement('tr');
-    tr.dataset.id = rec.id;
-
-    const titleHtml   = highlight(rec.title, re);
-    const authorHtml  = highlight(rec.author, re);
-    const tagHtml     = highlight(rec.tag, re);
-
-    tr.innerHTML = `
-      <td class="col-spine"><span class="row-spine row-spine--${rec.status}" aria-hidden="true"></span></td>
-      <td class="col-title">${titleHtml}</td>
-      <td class="col-author">${authorHtml}</td>
-      <td class="col-pages">${Number(rec.pages).toLocaleString()}</td>
-      <td class="col-tag">${tagHtml}</td>
-      <td class="col-status">
-        <span class="status-badge status-badge--${rec.status}" aria-label="Status: ${STATUS_LABELS[rec.status]}">
-          ${STATUS_LABELS[rec.status]}
-        </span>
-      </td>
-      <td class="col-date">${formatDate(rec.dateAdded)}</td>
-      <td class="col-actions">
-        <div class="row-actions">
-          <button class="btn-icon" data-action="edit" data-id="${rec.id}" aria-label="Edit ${escText(rec.title)}" title="Edit">✏️</button>
-          <button class="btn-icon btn-icon--delete" data-action="delete" data-id="${rec.id}" aria-label="Delete ${escText(rec.title)}" title="Delete">🗑️</button>
-        </div>
-      </td>
-    `;
-    frag.appendChild(tr);
-  }
-  tbody.appendChild(frag);
-};
-
-// ── Render inline edit row ─────────────────────────────────────
-export const renderEditRow = (rec) => {
-  const tbody = document.getElementById('records-body');
-  const row = tbody.querySelector(`tr[data-id="${rec.id}"]`);
-  if (!row) return;
-
-  row.classList.add('edit-row');
-  row.innerHTML = `
-    <td></td>
-    <td><input type="text" value="${escText(rec.title)}" data-field="title" aria-label="Edit title" /></td>
-    <td><input type="text" value="${escText(rec.author)}" data-field="author" aria-label="Edit author" /></td>
-    <td><input type="text" value="${rec.pages}" data-field="pages" style="width:70px" aria-label="Edit pages" /></td>
-    <td><input type="text" value="${escText(rec.tag)}" data-field="tag" aria-label="Edit tag" /></td>
-    <td>
-      <select data-field="status" aria-label="Edit status">
-        <option value="want" ${rec.status==='want'?'selected':''}>📋 Want to Read</option>
-        <option value="reading" ${rec.status==='reading'?'selected':''}>📖 Reading</option>
-        <option value="finished" ${rec.status==='finished'?'selected':''}>✅ Finished</option>
-      </select>
-    </td>
-    <td><input type="text" value="${rec.dateAdded}" data-field="dateAdded" style="width:110px" aria-label="Edit date" /></td>
-    <td>
-      <div class="row-actions">
-        <button class="btn btn--sm btn--primary" data-action="save-edit" data-id="${rec.id}" aria-label="Save edits for ${escText(rec.title)}">Save</button>
-        <button class="btn btn--sm btn--ghost" data-action="cancel-edit" data-id="${rec.id}" aria-label="Cancel editing">×</button>
-      </div>
-    </td>
-  `;
-  row.querySelector('input').focus();
-};
-
-// ── Render dashboard stats ─────────────────────────────────────
-export const renderStats = (records, settings) => {
-  const total    = records.length;
-  const want     = records.filter(r => r.status === 'want').length;
-  const reading  = records.filter(r => r.status === 'reading').length;
-  const done     = records.filter(r => r.status === 'finished').length;
-  const pages    = records.filter(r => r.status === 'finished')
-                          .reduce((s, r) => s + Number(r.pages), 0);
-
-  // Top tag
-  const tagCounts = {};
-  records.forEach(r => { tagCounts[r.tag] = (tagCounts[r.tag] || 0) + 1; });
-  const topTag = Object.entries(tagCounts).sort((a,b) => b[1]-a[1])[0]?.[0] || '—';
-
-  document.getElementById('stat-total').textContent   = total;
-  document.getElementById('stat-want').textContent    = want;
-  document.getElementById('stat-reading').textContent = reading;
-  document.getElementById('stat-done').textContent    = done;
-  document.getElementById('stat-pages').textContent   = pages.toLocaleString();
-  document.getElementById('stat-top-tag').textContent = topTag;
-
-  // Cap/goal
-  const goal = Number(settings.goal || 0);
-  const capMsg = document.getElementById('cap-message');
-  const capFill = document.getElementById('cap-fill');
-  const capText = document.getElementById('cap-text');
-  const capBar  = document.querySelector('.cap-bar');
-
-  if (goal > 0) {
-    const pct = Math.min(100, Math.round((done / goal) * 100));
-    capFill.style.width = pct + '%';
-    capBar.setAttribute('aria-valuenow', pct);
-    capText.textContent = `${done} / ${goal} finished`;
-
-    capMsg.hidden = false;
-    if (done >= goal) {
-      capMsg.className = 'cap-message cap-message--over';
-      capMsg.textContent = `🎉 Goal reached! You've finished ${done} of ${goal} resources — you're ready for your capstone!`;
-      announce(`Goal exceeded! You've finished ${done} of ${goal} resources.`, true);
-    } else {
-      const remaining = goal - done;
-      capMsg.className = 'cap-message cap-message--under';
-      capMsg.textContent = `📚 ${remaining} resource${remaining !== 1 ? 's' : ''} remaining to hit your goal of ${goal}.`;
-      announce(`${remaining} resources remaining to hit your goal.`, false);
-    }
+  if (over) {
+    const extra = finished - goal;
+    msg.textContent =
+      `🎉 Goal reached! ${finished}/${goal} books finished. ` +
+      `${extra > 0 ? `${extra} books over target!` : 'Exactly on target!'}`;
+    msg.style.color = 'var(--green)';
+    // Assertive alert for screen readers
+    announceAlert(
+      `Capstone goal reached! You have finished ${finished} out of ${goal} books.`
+    );
   } else {
-    capMsg.hidden = true;
-    capFill.style.width = '0%';
-    capText.textContent = 'No goal set';
+    const left = goal - finished;
+    msg.textContent =
+      `${finished}/${goal} books finished — ${left} more to reach your capstone goal.`;
+    msg.style.color = 'var(--text-muted)';
+    announce(`${left} books left to reach your reading goal.`);
   }
+}
 
-  renderBarChart(records);
-  renderBookshelf(records);
-};
-
-// ── Bar chart (last 7 days) ────────────────────────────────────
-const renderBarChart = (records) => {
-  const el = document.getElementById('bar-chart');
-  const today = new Date();
-  const days = [];
-
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    const label = d.toLocaleDateString('en-US', { weekday: 'short' });
-    const count = records.filter(r => r.dateAdded === key).length;
-    days.push({ label, key, count });
-  }
+function renderWeekChart(days) {
+  const chart = document.getElementById('weekChart');
+  if (!chart) return;
 
   const max = Math.max(...days.map(d => d.count), 1);
-  el.innerHTML = days.map(d => {
-    const h = Math.round((d.count / max) * 80);
-    return `
-      <div class="bar-chart__bar-wrap">
-        <span class="bar-chart__val" aria-hidden="true">${d.count || ''}</span>
-        <div class="bar-chart__bar" style="height:${h}px" role="presentation" title="${d.label}: ${d.count}"></div>
-        <span class="bar-chart__day" aria-hidden="true">${d.label}</span>
-      </div>
+  chart.innerHTML = '';
+
+  days.forEach(day => {
+    const col = document.createElement('div');
+    col.className = 'bar-col';
+
+    const heightPct = Math.round((day.count / max) * 100);
+
+    col.innerHTML = `
+      <span class="bar-count">${day.count > 0 ? day.count : ''}</span>
+      <div
+        class="bar-fill"
+        style="height:${heightPct}%"
+        title="${day.label}: ${day.count} book(s)"
+        aria-label="${day.label}: ${day.count} books added"
+      ></div>
+      <span class="bar-label">${day.label}</span>
     `;
-  }).join('');
-};
+    chart.appendChild(col);
+  });
+}
 
-// ── Bookshelf ──────────────────────────────────────────────────
-const renderBookshelf = (records) => {
-  const el = document.getElementById('bookshelf');
-  const empty = document.getElementById('shelf-empty');
+// ── RECORDS ──────────────────────────────────────────────
 
-  if (records.length === 0) {
-    el.innerHTML = '';
-    el.appendChild(empty);
-    empty.hidden = false;
+export function renderRecords(searchRegex = null) {
+  const books     = getFilteredBooks(searchRegex);
+  const container = document.getElementById('records-container');
+  const emptyEl   = document.getElementById('empty-state');
+
+  if (!container) return;
+
+  if (books.length === 0) {
+    container.innerHTML = '';
+    if (emptyEl) emptyEl.hidden = false;
+    announce('No books found.');
     return;
   }
-  empty.hidden = true;
 
-  // Height varies by page count, clamped
-  const pages = records.map(r => Number(r.pages));
-  const maxP  = Math.max(...pages, 100);
-  const minH  = 50, maxH = 120;
+  if (emptyEl) emptyEl.hidden = true;
 
-  el.innerHTML = records.map(r => {
-    const h = minH + Math.round(((Number(r.pages) / maxP) * (maxH - minH)));
-    const shortTitle = r.title.length > 12 ? r.title.slice(0, 12) + '…' : r.title;
-    return `<div
-      class="book-spine book-spine--${r.status}"
-      style="min-height:${h}px"
-      data-title="${escText(shortTitle)}"
-      title="${escText(r.title)} — ${escText(r.author)}"
-      tabindex="0"
-      role="button"
-      aria-label="${escText(r.title)} by ${escText(r.author)}, status: ${STATUS_LABELS[r.status]}"
-    ></div>`;
+  // Desktop — table
+  const tableHTML = renderTable(books, searchRegex);
+  // Mobile — cards
+  const cardsHTML = renderCards(books, searchRegex);
+
+  container.innerHTML = `
+    <div class="records-table-wrapper">
+      ${tableHTML}
+    </div>
+    <div class="cards-view">
+      ${cardsHTML}
+    </div>
+  `;
+
+  announce(`Showing ${books.length} book${books.length !== 1 ? 's' : ''}.`);
+}
+
+function renderTable(books, regex) {
+  const rows = books.map(book => {
+    const title  = regex ? highlight(book.title,  regex) : escapeHTML(book.title);
+    const author = regex ? highlight(book.author, regex) : escapeHTML(book.author);
+    const tag    = regex ? highlight(book.tag,    regex) : escapeHTML(book.tag || '—');
+    const notes  = regex ? highlight(book.notes || '', regex) : escapeHTML(book.notes || '');
+
+    return `
+      <tr data-id="${book.id}">
+        <td><strong>${title}</strong></td>
+        <td>${author}</td>
+        <td>${book.pages.toLocaleString()}</td>
+        <td>${renderStatusBadge(book.status)}</td>
+        <td>${book.tag ? `<span class="tag-badge">${tag}</span>` : '—'}</td>
+        <td>${book.dateAdded}</td>
+        <td>
+          <div class="action-btns">
+            <button
+              class="btn btn-sm btn-secondary edit-btn"
+              data-id="${book.id}"
+              aria-label="Edit ${escapeHTML(book.title)}"
+            >
+              ✏️ Edit
+            </button>
+            <button
+              class="btn btn-sm btn-danger delete-btn"
+              data-id="${book.id}"
+              aria-label="Delete ${escapeHTML(book.title)}"
+            >
+              🗑️ Delete
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
   }).join('');
-};
 
-// ── Populate tag filter ────────────────────────────────────────
-export const populateTagFilter = (records) => {
-  const select = document.getElementById('filter-tag');
-  const current = select.value;
-  const tags = [...new Set(records.map(r => r.tag))].sort();
-  select.innerHTML = '<option value="">All Tags</option>' +
-    tags.map(t => `<option value="${escText(t)}" ${t===current?'selected':''}>${escText(t)}</option>`).join('');
-};
+  return `
+    <table class="records-table" aria-label="Book records">
+      <thead>
+        <tr>
+          <th scope="col">Title</th>
+          <th scope="col">Author</th>
+          <th scope="col">Pages</th>
+          <th scope="col">Status</th>
+          <th scope="col">Tag</th>
+          <th scope="col">Date Added</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+  `;
+}
 
-// ── Helpers ────────────────────────────────────────────────────
-const formatDate = (str) => {
-  if (!str) return '—';
-  try {
-    return new Date(str + 'T00:00:00').toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
-  } catch { return str; }
-};
+function renderCards(books, regex) {
+  return books.map(book => {
+    const title  = regex ? highlight(book.title,  regex) : escapeHTML(book.title);
+    const author = regex ? highlight(book.author, regex) : escapeHTML(book.author);
+    const tag    = regex ? highlight(book.tag || '', regex) : escapeHTML(book.tag || '');
+    const notes  = regex ? highlight(book.notes || '', regex) : escapeHTML(book.notes || '');
 
-const escText = (str) =>
-  String(str || '')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+    return `
+      <article class="book-card" data-id="${book.id}" aria-label="${escapeHTML(book.title)}">
+        <h3>${title}</h3>
+        <p class="book-meta">
+          by ${author} &nbsp;·&nbsp;
+          ${book.pages.toLocaleString()} pages &nbsp;·&nbsp;
+          ${book.dateAdded}
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          ${renderStatusBadge(book.status)}
+          ${book.tag ? `<span class="tag-badge">${tag}</span>` : ''}
+        </div>
+        ${book.notes
+          ? `<p class="book-notes">${notes}</p>`
+          : ''}
+        <div class="action-btns" style="margin-top:10px">
+          <button
+            class="btn btn-sm btn-secondary edit-btn"
+            data-id="${book.id}"
+            aria-label="Edit ${escapeHTML(book.title)}"
+          >
+            ✏️ Edit
+          </button>
+          <button
+            class="btn btn-sm btn-danger delete-btn"
+            data-id="${book.id}"
+            aria-label="Delete ${escapeHTML(book.title)}"
+          >
+            🗑️ Delete
+          </button>
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
+function renderStatusBadge(status) {
+  const cls = {
+    'Finished':     'finished',
+    'Reading':      'reading',
+    'Want to Read': 'want-to-read',
+  }[status] || '';
+  return `<span class="status-badge ${cls}">${escapeHTML(status)}</span>`;
+}
+
+// ── FORM ─────────────────────────────────────────────────
+
+/** Fill the form with a book's data for editing */
+export function fillFormForEdit(book) {
+  document.getElementById('titleInput').value  = book.title;
+  document.getElementById('authorInput').value = book.author;
+  document.getElementById('pagesInput').value  = book.pages;
+  document.getElementById('statusSelect').value= book.status;
+  document.getElementById('tagInput').value    = book.tag || '';
+  document.getElementById('dateInput').value   = book.dateAdded;
+  document.getElementById('notesInput').value  = book.notes || '';
+  document.getElementById('editId').value      = book.id;
+
+  document.getElementById('form-heading').textContent = 'Edit Book';
+  document.getElementById('submitBtn').textContent    = '💾 Update Book';
+  document.getElementById('cancelBtn').hidden         = false;
+}
+
+/** Reset form back to Add mode */
+export function resetForm() {
+  document.getElementById('bookForm').reset();
+  document.getElementById('editId').value             = '';
+  document.getElementById('form-heading').textContent = 'Add a Book';
+  document.getElementById('submitBtn').textContent    = '💾 Save Book';
+  document.getElementById('cancelBtn').hidden         = true;
+
+  // Clear all error messages
+  document.querySelectorAll('.error-msg').forEach(el => {
+    el.textContent = '';
+  });
+
+  // Clear valid/invalid classes
+  document.querySelectorAll('.form-group input, .form-group textarea, .form-group select')
+    .forEach(el => {
+      el.classList.remove('valid', 'invalid');
+    });
+
+  // Set today's date as default
+  const dateInput = document.getElementById('dateInput');
+  if (dateInput) {
+    dateInput.value = new Date().toISOString().slice(0, 10);
+  }
+}
+
+/** Show a single field error */
+export function showFieldError(fieldName,
