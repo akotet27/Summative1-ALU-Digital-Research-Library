@@ -1,418 +1,504 @@
-// ── app.js ───────────────────────────────────────────────
-// Main entry point. Wires everything together.
-// Imports from all other modules and attaches event listeners.
+/* scripts/app.js — IIFE Module: main application logic */
+;(function (App) {
+  'use strict';
 
-import { state, initState, addBook, updateBook,
-         deleteBook, replaceBooks, updateSettings } from './state.js';
-import { validateField, validateForm }              from './validators.js';
-import { compileSearch }                            from './search.js';
-import { loadSettings, exportJSON, parseImport }   from './storage.js';
-import {
-  showSection, renderDashboard, renderRecords,
-  fillFormForEdit, resetForm, showFieldError,
-  fillSettings, applyTheme, showToast, announce,
-} from './ui.js';
+  var FOCUSABLE = 'button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])';
 
-// ── BOOT ─────────────────────────────────────────────────
+  // Short-hand aliases
+  var state      = App.state;
+  var validators = App.validators;
+  var search     = App.search;
+  var ui         = App.ui;
+  var storage    = App.storage;
 
-document.addEventListener('DOMContentLoaded', () => {
-  // 1. Load data from localStorage
-  initState();
+  // ── Sidebar (mobile) ──────────────────────────────────────────
+  var sidebar  = document.getElementById('sidebar');
+  var backdrop = document.getElementById('sidebar-backdrop');
 
-  // 2. Apply saved theme
-  applyTheme(state.settings.theme || 'light');
-
-  // 3. Set today's date as default in form
-  const dateInput = document.getElementById('dateInput');
-  if (dateInput) {
-    dateInput.value = new Date().toISOString().slice(0, 10);
+  function openSidebar() {
+    sidebar.classList.add('open');
+    backdrop.classList.add('active');
+    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', 'true');
+    document.getElementById('sidebar-close').focus();
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    backdrop.classList.remove('active');
+    var t = document.getElementById('sidebar-toggle');
+    if (t) t.setAttribute('aria-expanded', 'false');
   }
 
-  // 4. Fill settings panel
-  fillSettings();
+  document.getElementById('sidebar-toggle').addEventListener('click', openSidebar);
+  document.getElementById('sidebar-close').addEventListener('click', closeSidebar);
+  backdrop.addEventListener('click', closeSidebar);
 
-  // 5. Render initial view
-  renderDashboard();
-  renderRecords();
-
-  // 6. Attach all event listeners
-  attachNavListeners();
-  attachFormListeners();
-  attachRecordsListeners();
-  attachSearchListeners();
-  attachSettingsListeners();
-  attachThemeListener();
-});
-
-// ── NAVIGATION ───────────────────────────────────────────
-
-function attachNavListeners() {
-  // Nav link clicks
-  document.querySelectorAll('.nav-link, [data-section]').forEach(link => {
-    link.addEventListener('click', e => {
-      e.preventDefault();
-      const section = link.dataset.section;
-      if (!section) return;
-      showSection(section);
-
-      // Refresh data when switching sections
-      if (section === 'dashboard') renderDashboard();
-      if (section === 'records')   renderRecords(getCurrentRegex());
-      if (section === 'add-form')  {
-        // Only reset if not editing
-        if (!state.editingId) resetForm();
-      }
-      if (section === 'settings')  fillSettings();
+  // ── Navigation ────────────────────────────────────────────────
+  function navigateTo(page) {
+    document.querySelectorAll('.page').forEach(function (p) {
+      p.classList.toggle('page--active', p.id === 'page-' + page);
     });
-  });
-}
-
-// ── FORM ─────────────────────────────────────────────────
-
-function attachFormListeners() {
-  const form = document.getElementById('bookForm');
-  if (!form) return;
-
-  // Real-time validation on input
-  const fields = ['title', 'author', 'pages', 'tag', 'dateAdded', 'notes'];
-
-  fields.forEach(name => {
-    const inputId = name === 'dateAdded' ? 'dateInput'
-                  : name === 'status'    ? 'statusSelect'
-                  : `${name}Input`;
-    const el = document.getElementById(inputId);
-    if (!el) return;
-
-    el.addEventListener('input', () => {
-      const result = validateField(name, el.value);
-      showFieldError(
-        name === 'dateAdded' ? 'date' : name,
-        result.message
-      );
-      // Visual valid/invalid indicator
-      el.classList.toggle('invalid', !result.valid && el.value.length > 0);
-      el.classList.toggle('valid',    result.valid && el.value.length > 0);
+    document.querySelectorAll('.nav-link').forEach(function (a) {
+      var active = a.dataset.page === page;
+      a.classList.toggle('active', active);
+      if (active) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
     });
-  });
 
-  // Status select real-time
-  const statusEl = document.getElementById('statusSelect');
-  if (statusEl) {
-    statusEl.addEventListener('change', () => {
-      const result = validateField('status', statusEl.value);
-      showFieldError('status', result.message);
-    });
+    if (page === 'dashboard') ui.renderStats(state.getRecords(), state.getSettings());
+    if (page === 'library')   refreshLibrary();
+    if (page === 'settings')  loadSettingsForm();
+    if (page === 'add') {
+      document.getElementById('add-heading').textContent = 'Add Resource';
+      document.getElementById('resource-form').reset();
+      document.getElementById('f-date').value = todayStr();
+      clearErrors('f');
+    }
+    closeSidebar();
+    window.scrollTo(0, 0);
   }
 
-  // Form submit
-  form.addEventListener('submit', e => {
-    e.preventDefault();
-    handleFormSubmit();
+  // Wire nav clicks via event delegation
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest('[data-page]');
+    if (link) { e.preventDefault(); navigateTo(link.dataset.page); }
   });
 
-  // Cancel edit
-  document.getElementById('cancelBtn')?.addEventListener('click', () => {
-    state.editingId = null;
-    resetForm();
-    announce('Edit cancelled.');
-  });
-}
-
-function handleFormSubmit() {
-  const data = {
-    title:     document.getElementById('titleInput').value,
-    author:    document.getElementById('authorInput').value,
-    pages:     document.getElementById('pagesInput').value,
-    status:    document.getElementById('statusSelect').value,
-    tag:       document.getElementById('tagInput').value,
-    dateAdded: document.getElementById('dateInput').value,
-    notes:     document.getElementById('notesInput').value,
-  };
-
-  // Validate all fields
-  const { valid, errors } = validateForm(data);
-
-  // Show all errors
-  showFieldError('title',  errors.title  || '');
-  showFieldError('author', errors.author || '');
-  showFieldError('pages',  errors.pages  || '');
-  showFieldError('tag',    errors.tag    || '');
-  showFieldError('date',   errors.dateAdded || '');
-  showFieldError('status', errors.status || '');
-
-  if (!valid) {
-    announce('Please fix the errors in the form before saving.');
-    // Focus first invalid field
-    const firstError = Object.keys(errors)[0];
-    const fieldId = firstError === 'dateAdded' ? 'dateInput'
-                  : firstError === 'status'    ? 'statusSelect'
-                  : `${firstError}Input`;
-    document.getElementById(fieldId)?.focus();
-    return;
-  }
-
-  const editId = document.getElementById('editId').value;
-
-  if (editId) {
-    // Update existing
-    updateBook(editId, data);
-    state.editingId = null;
-    resetForm();
-    showToast(`✅ "${data.title}" updated!`);
-    announce(`Book "${data.title}" has been updated.`);
-  } else {
-    // Add new
-    addBook(data);
-    resetForm();
-    showToast(`📚 "${data.title}" added to your vault!`);
-    announce(`Book "${data.title}" has been added.`);
-  }
-
-  renderDashboard();
-  renderRecords(getCurrentRegex());
-
-  // Switch to records view
-  showSection('records');
-}
-
-// ── RECORDS (edit / delete) ───────────────────────────────
-
-function attachRecordsListeners() {
-  // Use event delegation — one listener on the container
-  const container = document.getElementById('records-container');
-  if (!container) return;
-
-  container.addEventListener('click', e => {
-    // Edit button
-    const editBtn = e.target.closest('.edit-btn');
-    if (editBtn) {
-      const id   = editBtn.dataset.id;
-      const book = state.books.find(b => b.id === id);
-      if (!book) return;
-
-      state.editingId = id;
-      fillFormForEdit(book);
-      showSection('add-form');
-      document.getElementById('titleInput')?.focus();
-      announce(`Editing "${book.title}". Make your changes and click Update Book.`);
-      return;
-    }
-
-    // Delete button
-    const delBtn = e.target.closest('.delete-btn');
-    if (delBtn) {
-      const id   = delBtn.dataset.id;
-      const book = state.books.find(b => b.id === id);
-      if (!book) return;
-
-      // Confirm before deleting
-      const confirmed = window.confirm(
-        `Delete "${book.title}"?\nThis cannot be undone.`
-      );
-      if (!confirmed) return;
-
-      deleteBook(id);
-      renderRecords(getCurrentRegex());
-      renderDashboard();
-      showToast(`🗑️ "${book.title}" deleted.`, 'error');
-      announce(`"${book.title}" has been deleted.`);
-    }
-  });
-}
-
-// ── SEARCH ───────────────────────────────────────────────
-
-let searchTimeout = null;
-
-function attachSearchListeners() {
-  const searchInput = document.getElementById('searchInput');
-  const caseToggle  = document.getElementById('caseToggle');
-  const errorEl     = document.getElementById('search-error');
-
-  if (!searchInput) return;
-
-  const doSearch = () => {
-    const query         = searchInput.value;
-    const caseSensitive = caseToggle?.checked || false;
-    state.searchQuery   = query;
-
-    const { regex, error } = compileSearch(query, caseSensitive);
-
-    if (error) {
-      if (errorEl) errorEl.textContent = error;
-      return;
-    }
-
-    if (errorEl) errorEl.textContent = '';
-    renderRecords(regex);
-  };
-
-  // Debounce — wait 250ms after typing stops
-  searchInput.addEventListener('input', () => {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(doSearch, 250);
-  });
-
-  caseToggle?.addEventListener('change', doSearch);
-}
-
-function getCurrentRegex() {
-  const query       = document.getElementById('searchInput')?.value || '';
-  const caseSensitive = document.getElementById('caseToggle')?.checked || false;
-  const { regex }   = compileSearch(query, caseSensitive);
-  return regex;
-}
-
-// ── SORT ─────────────────────────────────────────────────
-
-document.addEventListener('click', e => {
-  const sortBtn = e.target.closest('.sort-btn');
-  if (!sortBtn) return;
-
-  const field = sortBtn.dataset.sort;
-
-  // Toggle direction if same field
-  if (state.sortBy === field) {
-    state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
-  } else {
-    state.sortBy  = field;
-    state.sortDir = 'asc';
-  }
-
-  // Update button states
-  document.querySelectorAll('.sort-btn').forEach(btn => {
-    const isActive = btn.dataset.sort === field;
-    btn.classList.toggle('active', isActive);
-    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-  });
-
-  renderRecords(getCurrentRegex());
-  announce(`Sorted by ${field} ${state.sortDir === 'asc' ? 'ascending' : 'descending'}.`);
-});
-
-// ── FILTER ───────────────────────────────────────────────
-
-document.addEventListener('click', e => {
-  const filterBtn = e.target.closest('.filter-btn');
-  if (!filterBtn) return;
-
-  state.filterStatus = filterBtn.dataset.filter;
-
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    const isActive = btn.dataset.filter === state.filterStatus;
-    btn.classList.toggle('active', isActive);
-    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-  });
-
-  renderRecords(getCurrentRegex());
-  announce(`Filtered by: ${state.filterStatus}.`);
-});
-
-// ── SETTINGS ─────────────────────────────────────────────
-
-function attachSettingsListeners() {
-
-  // Save goal
-  document.getElementById('saveTargetBtn')?.addEventListener('click', () => {
-    const val = parseInt(document.getElementById('pageTarget').value, 10);
-    if (!val || val < 1) {
-      showToast('Please enter a valid goal (minimum 1).', 'error');
-      return;
-    }
-    updateSettings({ goal: val });
-    renderDashboard();
-    showToast(`🎯 Goal set to ${val} books!`);
-    announce(`Capstone reading goal updated to ${val} books.`);
-  });
-
-  // Save units
-  document.getElementById('saveUnitsBtn')?.addEventListener('click', () => {
-    const val = parseInt(document.getElementById('pagesPerHour').value, 10);
-    if (!val || val < 1) {
-      showToast('Please enter a valid reading speed.', 'error');
-      return;
-    }
-    updateSettings({ pagesPerHour: val });
-    renderDashboard();
-    showToast(`📖 Reading speed set to ${val} pages/hour!`);
-    announce(`Reading speed updated to ${val} pages per hour.`);
-  });
-
-  // Export JSON
-  document.getElementById('exportBtn')?.addEventListener('click', () => {
-    if (state.books.length === 0) {
-      showToast('No books to export.', 'error');
-      return;
-    }
-    exportJSON(state.books);
-    showToast(`⬇️ Exported ${state.books.length} books!`);
-    announce(`Exported ${state.books.length} books as JSON.`);
-  });
-
-  // Import JSON
-  document.getElementById('importFile')?.addEventListener('change', e => {
-    const file   = e.target.files[0];
-    const status = document.getElementById('import-status');
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const result = parseImport(ev.target.result);
-      if (!result.ok) {
-        if (status) status.textContent = `❌ ${result.error}`;
-        showToast(result.error, 'error');
-        announce(`Import failed: ${result.error}`);
-        return;
-      }
-
-      const confirmed = window.confirm(
-        `Import ${result.books.length} books? This will REPLACE your current library.`
-      );
-      if (!confirmed) return;
-
-      replaceBooks(result.books);
-      renderDashboard();
-      renderRecords();
-
-      if (status) {
-        status.textContent = `✅ Imported ${result.books.length} books successfully!`;
-      }
-      showToast(`✅ Imported ${result.books.length} books!`);
-      announce(`Successfully imported ${result.books.length} books.`);
+  // ── Library refresh ───────────────────────────────────────────
+  function getSearchState() {
+    return {
+      query:           document.getElementById('search-input').value,
+      caseInsensitive: !document.getElementById('search-case').checked,
+      status:          document.getElementById('filter-status').value,
+      tag:             document.getElementById('filter-tag').value,
+      sortBy:          document.getElementById('sort-by').value,
     };
+  }
 
+  function refreshLibrary() {
+    var opts    = getSearchState();
+    var result  = search.filterAndSort(state.getRecords(), opts);
+    var hint    = document.getElementById('search-hint');
+    var inp     = document.getElementById('search-input');
+
+    if (result.regexError) {
+      hint.textContent = '⚠ ' + result.regexError;
+      inp.classList.add('search-error');
+    } else if (opts.query) {
+      hint.textContent = result.filtered.length + ' match' + (result.filtered.length !== 1 ? 'es' : '');
+      inp.classList.remove('search-error');
+    } else {
+      hint.textContent = '';
+      inp.classList.remove('search-error');
+    }
+
+    ui.populateTagFilter(state.getRecords());
+    ui.renderTable(result.filtered, result.re);
+  }
+
+  ['search-input', 'filter-status', 'filter-tag', 'sort-by'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', refreshLibrary);
+    if (el) el.addEventListener('change', refreshLibrary);
+  });
+  document.getElementById('search-case').addEventListener('change', refreshLibrary);
+  document.getElementById('clear-filters').addEventListener('click', function () {
+    document.getElementById('search-input').value  = '';
+    document.getElementById('filter-status').value = '';
+    document.getElementById('filter-tag').value    = '';
+    document.getElementById('sort-by').value       = 'dateAdded-desc';
+    refreshLibrary();
+  });
+
+  // ── Table row actions ─────────────────────────────────────────
+  document.getElementById('records-body').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    var action = btn.dataset.action;
+    var id     = btn.dataset.id;
+
+    if (action === 'view') {
+      var rec = state.getRecords().find(function (r) { return r.id === id; });
+      if (rec) openViewModal(rec);
+    }
+    if (action === 'edit') {
+      var rec = state.getRecords().find(function (r) { return r.id === id; });
+      if (rec) openEditModal(rec);
+    }
+    if (action === 'delete') {
+      var rec = state.getRecords().find(function (r) { return r.id === id; });
+      if (rec) openConfirm('Delete "' + rec.title + '"?', function () {
+        state.deleteRecord(id);
+        refreshLibrary();
+        ui.renderStats(state.getRecords(), state.getSettings());
+        ui.showToast('Resource deleted.');
+        ui.announce('Resource deleted.');
+      });
+    }
+  });
+
+  // ── Bookshelf clicks ──────────────────────────────────────────
+  document.getElementById('bookshelf').addEventListener('click', function (e) {
+    var spine = e.target.closest('.book-spine');
+    if (!spine) return;
+    var rec = state.getRecords().find(function (r) { return r.id === spine.dataset.id; });
+    if (rec) openViewModal(rec);
+  });
+  document.getElementById('bookshelf').addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    var spine = e.target.closest('.book-spine');
+    if (!spine) return;
+    var rec = state.getRecords().find(function (r) { return r.id === spine.dataset.id; });
+    if (rec) openViewModal(rec);
+  });
+
+  // ── VIEW MODAL ────────────────────────────────────────────────
+  var viewTrigger = null;
+  var currentViewRec = null;
+
+  function openViewModal(rec) {
+    currentViewRec = rec;
+    viewTrigger    = document.activeElement;
+
+    document.getElementById('view-spine').className = 'view-modal__spine view-modal__spine--' + rec.status;
+    document.getElementById('view-modal-title').textContent = rec.title;
+    document.getElementById('view-author').textContent      = 'by ' + rec.author;
+
+    var labels = { want: 'Want to Read', reading: 'Currently Reading', finished: 'Finished' };
+    document.getElementById('view-status').innerHTML =
+      '<span class="status-badge status-badge--' + rec.status + '">' +
+      '<span class="status-dot" aria-hidden="true"></span>' + labels[rec.status] + '</span>';
+
+    document.getElementById('view-pages').textContent = Number(rec.pages).toLocaleString() + ' pages';
+    document.getElementById('view-tag').textContent   = rec.tag;
+    document.getElementById('view-date').textContent  = fmtDate(rec.dateAdded);
+
+    var notesWrap = document.getElementById('view-notes');
+    if (rec.notes && rec.notes.trim()) {
+      document.getElementById('view-notes-text').textContent = rec.notes;
+      notesWrap.hidden = false;
+    } else {
+      notesWrap.hidden = true;
+    }
+
+    document.getElementById('view-modal').hidden = false;
+    document.getElementById('view-edit-btn').focus();
+    ui.announce('Viewing: ' + rec.title);
+  }
+
+  function closeViewModal() {
+    document.getElementById('view-modal').hidden = true;
+    currentViewRec = null;
+    if (viewTrigger && viewTrigger.focus) viewTrigger.focus();
+    viewTrigger = null;
+  }
+
+  document.getElementById('view-modal-close').addEventListener('click', closeViewModal);
+  document.getElementById('view-close-btn').addEventListener('click', closeViewModal);
+  document.getElementById('view-edit-btn').addEventListener('click', function () {
+    var rec = currentViewRec;
+    closeViewModal();
+    if (rec) openEditModal(rec);
+  });
+  document.getElementById('view-modal').addEventListener('click', function (e) {
+    if (e.target === e.currentTarget) closeViewModal();
+  });
+  document.getElementById('view-modal').addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { closeViewModal(); return; }
+    if (e.key === 'Tab') trapFocus(e, document.getElementById('view-modal'));
+  });
+
+  // ── EDIT MODAL ────────────────────────────────────────────────
+  var editTrigger = null;
+
+  function openEditModal(rec) {
+    editTrigger = document.activeElement;
+    document.getElementById('em-id').value     = rec.id;
+    document.getElementById('em-title').value  = rec.title;
+    document.getElementById('em-author').value = rec.author;
+    document.getElementById('em-pages').value  = rec.pages;
+    document.getElementById('em-date').value   = rec.dateAdded;
+    document.getElementById('em-tag').value    = rec.tag;
+    document.getElementById('em-status').value = rec.status;
+    document.getElementById('em-notes').value  = rec.notes || '';
+    clearErrors('em');
+    document.getElementById('edit-modal').hidden = false;
+    document.getElementById('em-title').focus();
+  }
+
+  function closeEditModal() {
+    document.getElementById('edit-modal').hidden = true;
+    if (editTrigger && editTrigger.focus) editTrigger.focus();
+    editTrigger = null;
+  }
+
+  document.getElementById('edit-modal-close').addEventListener('click', closeEditModal);
+  document.getElementById('edit-modal-cancel').addEventListener('click', closeEditModal);
+  document.getElementById('edit-modal').addEventListener('click', function (e) {
+    if (e.target === e.currentTarget) closeEditModal();
+  });
+  document.getElementById('edit-modal').addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { closeEditModal(); return; }
+    if (e.key === 'Tab') trapFocus(e, document.getElementById('edit-modal'));
+  });
+
+  document.getElementById('edit-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = {
+      title:  document.getElementById('em-title').value,
+      author: document.getElementById('em-author').value,
+      pages:  document.getElementById('em-pages').value,
+      date:   document.getElementById('em-date').value,
+      tag:    document.getElementById('em-tag').value,
+      status: document.getElementById('em-status').value,
+      notes:  document.getElementById('em-notes').value,
+    };
+    var result = validators.validateRecord(f);
+    showErrors('em', result.errors);
+    if (!result.isValid) { ui.announce(Object.values(result.errors)[0], true); return; }
+
+    state.updateRecord(document.getElementById('em-id').value, {
+      title:     validators.normalizeTitle(f.title),
+      author:    f.author.trim(),
+      pages:     parseInt(f.pages, 10),
+      dateAdded: f.date.trim(),
+      tag:       f.tag.trim(),
+      status:    f.status,
+      notes:     f.notes.trim(),
+    });
+    closeEditModal();
+    refreshLibrary();
+    ui.renderStats(state.getRecords(), state.getSettings());
+    ui.showToast('Resource updated.');
+    ui.announce('Resource updated.');
+  });
+
+  // Live blur validation — edit modal
+  var editValidators = { 'em-title': 'validateTitle', 'em-author': 'validateAuthor', 'em-pages': 'validatePages', 'em-date': 'validateDate', 'em-tag': 'validateTag', 'em-status': 'validateStatus', 'em-notes': 'validateNotes' };
+  Object.keys(editValidators).forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('blur', function () {
+      setFieldError(id, validators[editValidators[id]](el.value));
+    });
+  });
+
+  // ── ADD FORM ──────────────────────────────────────────────────
+  var addValidators = { 'f-title': 'validateTitle', 'f-author': 'validateAuthor', 'f-pages': 'validatePages', 'f-date': 'validateDate', 'f-tag': 'validateTag', 'f-status': 'validateStatus', 'f-notes': 'validateNotes' };
+  Object.keys(addValidators).forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('blur', function () {
+      setFieldError(id, validators[addValidators[id]](el.value));
+    });
+  });
+
+  document.getElementById('resource-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = {
+      title:  document.getElementById('f-title').value,
+      author: document.getElementById('f-author').value,
+      pages:  document.getElementById('f-pages').value,
+      date:   document.getElementById('f-date').value,
+      tag:    document.getElementById('f-tag').value,
+      status: document.getElementById('f-status').value,
+      notes:  document.getElementById('f-notes').value,
+    };
+    var result = validators.validateRecord(f);
+    showErrors('f', result.errors);
+    if (!result.isValid) { ui.announce(Object.values(result.errors)[0], true); return; }
+
+    var now = new Date().toISOString();
+    state.addRecord({
+      id:        state.generateId(),
+      title:     validators.normalizeTitle(f.title),
+      author:    f.author.trim(),
+      pages:     parseInt(f.pages, 10),
+      dateAdded: f.date.trim(),
+      tag:       f.tag.trim(),
+      status:    f.status,
+      notes:     f.notes.trim(),
+      createdAt: now, updatedAt: now,
+    });
+    document.getElementById('resource-form').reset();
+    document.getElementById('f-date').value = todayStr();
+    clearErrors('f');
+    ui.showToast('Resource added!');
+    ui.announce('Resource added successfully.');
+    navigateTo('library');
+  });
+
+  // ── Page Converter ────────────────────────────────────────────
+  document.getElementById('conv-input').addEventListener('input', function (e) {
+    var pages = Number(e.target.value);
+    var ppm   = Number(state.getSettings().ppm || 1.5);
+    var el    = document.getElementById('conversion-results');
+    if (!pages || pages <= 0) { el.innerHTML = ''; return; }
+    var mins = pages / ppm;
+    var hrs  = mins / 60;
+    el.innerHTML =
+      '<div>At <strong>' + ppm + '</strong> pages/min:</div>' +
+      '<div><strong>' + Math.round(mins) + '</strong> minutes</div>' +
+      '<div><strong>' + hrs.toFixed(1) + '</strong> hours</div>' +
+      '<div><strong>' + (hrs / 8).toFixed(1) + '</strong> work-days (8 hrs)</div>';
+  });
+
+  // ── Settings ──────────────────────────────────────────────────
+  function loadSettingsForm() {
+    var s = state.getSettings();
+    document.getElementById('s-goal').value = s.goal || '';
+    document.getElementById('s-ppm').value  = s.ppm  || 1.5;
+  }
+
+  document.getElementById('save-goal-btn').addEventListener('click', function () {
+    var val = Number(document.getElementById('s-goal').value);
+    state.updateSettings({ goal: val >= 0 ? val : 0 });
+    ui.renderStats(state.getRecords(), state.getSettings());
+    ui.showToast('Goal saved.');
+    ui.announce('Reading goal saved.');
+  });
+
+  document.getElementById('save-units-btn').addEventListener('click', function () {
+    var val = parseFloat(document.getElementById('s-ppm').value);
+    if (!val || val <= 0) { ui.showToast('Enter a valid reading speed.'); return; }
+    state.updateSettings({ ppm: val });
+    ui.showToast('Reading speed saved.');
+    ui.announce('Reading speed saved.');
+  });
+
+  document.getElementById('clear-data-btn').addEventListener('click', function () {
+    openConfirm('Delete ALL resources? This cannot be undone.', function () {
+      state.replaceAll([]);
+      ui.renderStats(state.getRecords(), state.getSettings());
+      refreshLibrary();
+      ui.showToast('All data cleared.');
+      ui.announce('All data cleared.', true);
+    });
+  });
+
+  // ── Import / Export ───────────────────────────────────────────
+  document.getElementById('export-btn').addEventListener('click', function () {
+    var blob = new Blob([JSON.stringify(state.getRecords(), null, 2)], { type: 'application/json' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'alu-library-' + todayStr() + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    ui.showToast('Library exported.');
+    ui.announce('Library exported as JSON.');
+  });
+
+  document.getElementById('import-file').addEventListener('change', function (e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      try {
+        var data = JSON.parse(ev.target.result);
+        if (!storage.validateImport(data)) {
+          ui.showToast('⚠ Invalid JSON structure — import failed.');
+          ui.announce('Import failed: invalid structure.', true);
+          return;
+        }
+        openConfirm('Import ' + data.length + ' records? This replaces your current library.', function () {
+          var now = new Date().toISOString();
+          state.replaceAll(data.map(function (r) {
+            return Object.assign({ createdAt: now, updatedAt: now }, r);
+          }));
+          refreshLibrary();
+          ui.renderStats(state.getRecords(), state.getSettings());
+          ui.showToast('Imported ' + data.length + ' resources.');
+          ui.announce('Imported ' + data.length + ' resources.');
+        });
+      } catch (err) {
+        ui.showToast('⚠ Could not parse JSON file.');
+        ui.announce('Import failed: could not parse file.', true);
+      }
+    };
     reader.readAsText(file);
-    // Reset file input so same file can be imported again
     e.target.value = '';
   });
 
-  // Clear all data
-  document.getElementById('clearAllBtn')?.addEventListener('click', () => {
-    if (state.books.length === 0) {
-      showToast('Library is already empty.', 'error');
-      return;
-    }
-    const confirmed = window.confirm(
-      `Delete ALL ${state.books.length} books? This cannot be undone.`
-    );
-    if (!confirmed) return;
+  // ── CONFIRM MODAL ─────────────────────────────────────────────
+  var pendingConfirm  = null;
+  var confirmTrigger  = null;
 
-    replaceBooks([]);
-    renderDashboard();
-    renderRecords();
-    showToast('🗑️ All data cleared.', 'error');
-    announce('All books have been deleted.');
+  function openConfirm(msg, callback) {
+    pendingConfirm  = callback;
+    confirmTrigger  = document.activeElement;
+    document.getElementById('confirm-body').textContent = msg;
+    document.getElementById('confirm-overlay').hidden   = false;
+    document.getElementById('confirm-yes').focus();
+  }
+  function closeConfirm() {
+    document.getElementById('confirm-overlay').hidden = true;
+    pendingConfirm = null;
+    if (confirmTrigger && confirmTrigger.focus) confirmTrigger.focus();
+    confirmTrigger = null;
+  }
+
+  document.getElementById('confirm-yes').addEventListener('click', function () {
+    if (pendingConfirm) pendingConfirm();
+    closeConfirm();
   });
-}
-
-// ── THEME TOGGLE ─────────────────────────────────────────
-
-function attachThemeListener() {
-  document.getElementById('themeToggle')?.addEventListener('click', () => {
-    const current = state.settings.theme || 'light';
-    const next    = current === 'light' ? 'dark' : 'light';
-    updateSettings({ theme: next });
-    applyTheme(next);
-    announce(`${next === 'dark' ? 'Dark' : 'Light'} mode enabled.`);
+  document.getElementById('confirm-no').addEventListener('click', closeConfirm);
+  document.getElementById('confirm-overlay').addEventListener('click', function (e) {
+    if (e.target === e.currentTarget) closeConfirm();
   });
-}
+  document.getElementById('confirm-overlay').addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { closeConfirm(); return; }
+    if (e.key === 'Tab') trapFocus(e, document.getElementById('confirm-overlay'));
+  });
+
+  // Global Escape
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (!document.getElementById('view-modal').hidden)    closeViewModal();
+    if (!document.getElementById('edit-modal').hidden)    closeEditModal();
+    if (!document.getElementById('confirm-overlay').hidden) closeConfirm();
+    if (sidebar.classList.contains('open'))              closeSidebar();
+  });
+
+  // ── Helpers ───────────────────────────────────────────────────
+  function trapFocus(e, container) {
+    var focusable = Array.from(container.querySelectorAll(FOCUSABLE));
+    if (!focusable.length) return;
+    var first = focusable[0], last = focusable[focusable.length - 1];
+    if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+    else            { if (document.activeElement === last)  { e.preventDefault(); first.focus(); } }
+  }
+
+  function setFieldError(id, msg) {
+    var input = document.getElementById(id);
+    var err   = document.getElementById(id + '-err');
+    if (!input) return;
+    if (err) err.textContent = msg || '';
+    input.classList.toggle('invalid', !!msg);
+    input.classList.toggle('valid',   !msg && input.value.trim() !== '');
+  }
+
+  function clearErrors(prefix) {
+    ['title','author','pages','date','tag','status','notes'].forEach(function (f) {
+      setFieldError(prefix + '-' + f, '');
+    });
+  }
+
+  function showErrors(prefix, errors) {
+    ['title','author','pages','date','tag','status','notes'].forEach(function (f) {
+      setFieldError(prefix + '-' + f, errors[f] || '');
+    });
+  }
+
+  function todayStr() { return new Date().toISOString().slice(0, 10); }
+  function fmtDate(str) {
+    if (!str) return '—';
+    try { return new Date(str + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+    catch (e) { return str; }
+  }
+
+  // ── Init ──────────────────────────────────────────────────────
+  document.getElementById('f-date').value = todayStr();
+  navigateTo('dashboard');
+
+})(window.App = window.App || {});
