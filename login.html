@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — Ethiolab</title>
+  <meta name="description" content="Sign in or create an account to access Ethiolab, Ethiopia's Digital Research Library." />
+  <script>(function(){var t=localStorage.getItem('alu:theme')||'light';document.documentElement.setAttribute('data-theme',t);})()</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <div role="alert" aria-live="assertive" aria-atomic="true" class="sr-only" id="live-assertive"></div>
+
+  <div class="auth-layout">
+
+    <!-- ── Left brand panel ──────────────────────────────────── -->
+    <div class="auth-brand">
+      <div class="auth-brand__logo" aria-hidden="true">E</div>
+      <div class="auth-brand__name">Ethiolab</div>
+      <p class="auth-brand__tagline">Ethiopia's Digital Research Library</p>
+      <ul class="auth-features">
+        <li>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>
+          </svg>
+          Track your personal research library
+        </li>
+        <li>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>
+          </svg>
+          Submit books for facilitator approval
+        </li>
+        <li>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>
+          </svg>
+          Take notes and export your data
+        </li>
+        <li>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>
+          </svg>
+          Works offline after first visit
+        </li>
+      </ul>
+      <a href="index.html" class="auth-brand__back">← Back to library</a>
+    </div>
+
+    <!-- ── Right form panel ──────────────────────────────────── -->
+    <div class="auth-form-side">
+      <main id="main-content">
+        <div class="auth-card">
+
+          <!-- Demo credentials -->
+          <div style="background:var(--bg-offset);border-radius:var(--radius);padding:.6rem .85rem;margin-bottom:1.25rem;font-size:.75rem;color:var(--text-muted);border-left:3px solid var(--primary)" role="note" aria-label="Demo credentials">
+            <strong style="color:var(--text)">Demo accounts:</strong><br />
+            Student: <code>a.demise@alustudent.com</code> / <code>Student1!</code><br />
+            Facilitator: <code>facilitator@alu.edu</code> / <code>Facilitate1!</code>
+          </div>
+
+          <!-- Tabs -->
+          <div class="auth-tabs" role="tablist" aria-label="Login or Register">
+            <button class="auth-tab active" role="tab" id="tab-login"
+                    aria-selected="true" aria-controls="panel-login">Sign In</button>
+            <button class="auth-tab"        role="tab" id="tab-register"
+                    aria-selected="false" aria-controls="panel-register">Create Account</button>
+          </div>
+
+          <!-- LOGIN PANEL -->
+          <div class="auth-tab-panel active" id="panel-login" role="tabpanel" aria-labelledby="tab-login">
+            <form id="login-form" novalidate aria-label="Sign in form">
+              <div class="form-group">
+                <label for="l-email" class="form-label">Email address</label>
+                <input type="email" id="l-email" class="form-input" autocomplete="email"
+                       required aria-required="true" aria-describedby="l-email-err"
+                       placeholder="you@alustudent.com" />
+                <span class="form-error" id="l-email-err" role="alert"></span>
+              </div>
+              <div class="form-group">
+                <label for="l-password" class="form-label">Password</label>
+                <div style="position:relative">
+                  <input type="password" id="l-password" class="form-input" autocomplete="current-password"
+                         required aria-required="true" aria-describedby="l-password-err"
+                         placeholder="Your password" style="padding-right:2.75rem" />
+                  <button type="button" class="modal__close" id="l-pw-toggle"
+                          style="position:absolute;top:50%;right:.5rem;transform:translateY(-50%)"
+                          aria-label="Show / hide password" aria-pressed="false">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                </div>
+                <span class="form-error" id="l-password-err" role="alert"></span>
+              </div>
+              <div class="form-error" id="login-error" role="alert" style="margin-bottom:.5rem"></div>
+              <button type="submit" class="btn btn--primary" style="width:100%">Sign In</button>
+            </form>
+            <p class="auth-footer">No account? <a href="#" id="go-register">Create one free</a></p>
+          </div>
+
+          <!-- REGISTER PANEL -->
+          <div class="auth-tab-panel" id="panel-register" role="tabpanel" aria-labelledby="tab-register">
+            <form id="register-form" novalidate aria-label="Create account form">
+              <div class="form-group">
+                <label for="r-name" class="form-label">Full Name <span class="required" aria-hidden="true">*</span></label>
+                <input type="text" id="r-name" class="form-input" autocomplete="name"
+                       required aria-required="true" aria-describedby="r-name-err"
+                       placeholder="e.g. Alice Kamara" />
+                <span class="form-error" id="r-name-err" role="alert"></span>
+              </div>
+              <div class="form-group">
+                <label for="r-email" class="form-label">Email address <span class="required" aria-hidden="true">*</span></label>
+                <input type="email" id="r-email" class="form-input" autocomplete="email"
+                       required aria-required="true" aria-describedby="r-email-err"
+                       placeholder="you@alustudent.com" />
+                <span class="form-error" id="r-email-err" role="alert"></span>
+              </div>
+              <div class="form-group">
+                <label for="r-class" class="form-label">Class / Cohort <span class="required" aria-hidden="true">*</span></label>
+                <select id="r-class" class="form-input form-select"
+                        required aria-required="true" aria-describedby="r-class-err">
+                  <option value="">Select your class…</option>
+                </select>
+                <span class="form-error" id="r-class-err" role="alert"></span>
+              </div>
+              <div class="form-group">
+                <label for="r-mission" class="form-label">Capstone Mission <span class="required" aria-hidden="true">*</span></label>
+                <input type="text" id="r-mission" class="form-input"
+                       required aria-required="true" aria-describedby="r-mission-err r-mission-hint"
+                       placeholder="e.g. AI tools for healthcare in Africa" />
+                <span class="form-hint" id="r-mission-hint">One sentence describing your capstone focus.</span>
+                <span class="form-error" id="r-mission-err" role="alert"></span>
+              </div>
+              <div class="form-group">
+                <label for="r-password" class="form-label">Password <span class="required" aria-hidden="true">*</span></label>
+                <div style="position:relative">
+                  <input type="password" id="r-password" class="form-input" autocomplete="new-password"
+                         required aria-required="true" aria-describedby="r-password-err r-password-hint"
+                         placeholder="Min 8 chars, uppercase, digit, special" style="padding-right:2.75rem" />
+                  <button type="button" class="modal__close" id="r-pw-toggle"
+                          style="position:absolute;top:50%;right:.5rem;transform:translateY(-50%)"
+                          aria-label="Show / hide password" aria-pressed="false">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                </div>
+                <span class="form-hint" id="r-password-hint">Min 8 chars · 1 uppercase · 1 number · 1 special (!@#$%^&amp;*)</span>
+                <span class="form-error" id="r-password-err" role="alert"></span>
+              </div>
+              <div class="form-group">
+                <label for="r-confirm" class="form-label">Confirm Password <span class="required" aria-hidden="true">*</span></label>
+                <input type="password" id="r-confirm" class="form-input" autocomplete="new-password"
+                       required aria-required="true" aria-describedby="r-confirm-err"
+                       placeholder="Repeat your password" />
+                <span class="form-error" id="r-confirm-err" role="alert"></span>
+              </div>
+              <div class="form-error" id="register-error" role="alert" style="margin-bottom:.5rem"></div>
+              <button type="submit" class="btn btn--primary" style="width:100%">Create Account</button>
+            </form>
+            <p class="auth-footer">Already have an account? <a href="#" id="go-login">Sign in</a></p>
+          </div>
+
+        </div><!-- /auth-card -->
+      </main>
+    </div><!-- /auth-form-side -->
+  </div><!-- /auth-layout -->
+
+  <script src="scripts/storage.js"></script>
+  <script src="scripts/validators.js"></script>
+  <script src="scripts/auth.js"></script>
+  <script>
+    App.auth.init();
+    App.auth.wireThemeToggles();
+
+    /* Redirect if already logged in */
+    (function () {
+      var sess = App.auth.getSession();
+      if (sess) {
+        window.location.href = sess.role === 'facilitator' ? 'admin.html' : 'dashboard.html';
+      }
+    })();
+
+    /* Populate class dropdown */
+    var classEl = document.getElementById('r-class');
+    App.auth.classes.forEach(function (c) {
+      var opt = document.createElement('option');
+      opt.value = c.id; opt.textContent = c.label;
+      classEl.appendChild(opt);
+    });
+
+    /* Tab switching */
+    function showTab(name) {
+      document.querySelectorAll('.auth-tab').forEach(function (t) {
+        var active = t.id === 'tab-' + name;
+        t.classList.toggle('active', active);
+        t.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      document.querySelectorAll('.auth-tab-panel').forEach(function (p) {
+        p.classList.toggle('active', p.id === 'panel-' + name);
+      });
+    }
+    document.getElementById('tab-login').addEventListener('click',    function () { showTab('login'); });
+    document.getElementById('tab-register').addEventListener('click', function () { showTab('register'); });
+    document.getElementById('go-register').addEventListener('click',  function (e) { e.preventDefault(); showTab('register'); });
+    document.getElementById('go-login').addEventListener('click',     function (e) { e.preventDefault(); showTab('login'); });
+
+    /* Password visibility toggles */
+    function wirePwToggle(toggleId, inputId) {
+      var btn = document.getElementById(toggleId);
+      var inp = document.getElementById(inputId);
+      if (!btn || !inp) return;
+      btn.addEventListener('click', function () {
+        var show = inp.type === 'password';
+        inp.type = show ? 'text' : 'password';
+        btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+      });
+    }
+    wirePwToggle('l-pw-toggle', 'l-password');
+    wirePwToggle('r-pw-toggle', 'r-password');
+
+    /* Helper */
+    function setErr(id, msg) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = msg || '';
+      var inp = document.getElementById(id.replace('-err', ''));
+      if (inp) {
+        inp.classList.toggle('invalid', !!msg);
+        inp.classList.toggle('valid', !msg && inp.value.trim() !== '');
+      }
+    }
+
+    /* Login form */
+    document.getElementById('login-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var email = document.getElementById('l-email').value;
+      var pw    = document.getElementById('l-password').value;
+
+      setErr('l-email-err', '');
+      setErr('l-password-err', '');
+      document.getElementById('login-error').textContent = '';
+
+      var emailErr = App.validators.validateEmail(email);
+      if (emailErr) { setErr('l-email-err', emailErr); return; }
+      if (!pw) { setErr('l-password-err', 'Password is required.'); return; }
+
+      var result = App.auth.login(email, pw);
+      if (!result.ok) {
+        document.getElementById('login-error').textContent = result.error;
+        document.getElementById('live-assertive').textContent = result.error;
+        return;
+      }
+      window.location.href = result.session.role === 'facilitator' ? 'admin.html' : 'dashboard.html';
+    });
+
+    document.getElementById('l-email').addEventListener('blur', function () {
+      setErr('l-email-err', App.validators.validateEmail(this.value));
+    });
+
+    /* Register form */
+    document.getElementById('register-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var data = {
+        name:            document.getElementById('r-name').value,
+        email:           document.getElementById('r-email').value,
+        class:           document.getElementById('r-class').value,
+        mission:         document.getElementById('r-mission').value,
+        password:        document.getElementById('r-password').value,
+        confirmPassword: document.getElementById('r-confirm').value,
+      };
+
+      ['r-name-err','r-email-err','r-class-err','r-mission-err','r-password-err','r-confirm-err'].forEach(function (id) { setErr(id, ''); });
+      document.getElementById('register-error').textContent = '';
+
+      var hasErr = false;
+      if (!data.name.trim()) { setErr('r-name-err', 'Full name is required.'); hasErr = true; }
+      var emailErr = App.validators.validateEmail(data.email);
+      if (emailErr) { setErr('r-email-err', emailErr); hasErr = true; }
+      if (!data.class) { setErr('r-class-err', 'Please select your class.'); hasErr = true; }
+      if (!data.mission.trim()) { setErr('r-mission-err', 'Capstone mission is required.'); hasErr = true; }
+      var pwErr = App.validators.validatePassword(data.password);
+      if (pwErr) { setErr('r-password-err', pwErr); hasErr = true; }
+      if (data.password !== data.confirmPassword) { setErr('r-confirm-err', 'Passwords do not match.'); hasErr = true; }
+      if (hasErr) return;
+
+      var result = App.auth.register(data);
+      if (!result.ok) {
+        document.getElementById('register-error').textContent = result.error;
+        document.getElementById('live-assertive').textContent = result.error;
+        return;
+      }
+      var loginResult = App.auth.login(data.email, data.password);
+      if (loginResult.ok) {
+        window.location.href = 'dashboard.html';
+      }
+    });
+
+    [['r-email','validateEmail'],['r-password','validatePassword']].forEach(function (pair) {
+      var el = document.getElementById(pair[0]);
+      if (el) el.addEventListener('blur', function () {
+        setErr(pair[0] + '-err', App.validators[pair[1]](this.value));
+      });
+    });
+    document.getElementById('r-confirm').addEventListener('blur', function () {
+      var pw = document.getElementById('r-password').value;
+      setErr('r-confirm-err', this.value && this.value !== pw ? 'Passwords do not match.' : '');
+    });
+  </script>
+</body>
+</html>

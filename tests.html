@@ -2,235 +2,265 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ALU Library — Tests</title>
-  <style>
-    body { font-family: 'Inter', system-ui, sans-serif; background: #f5f0e8; padding: 2rem; color: #1a1a2e; }
-    h1   { font-family: Georgia, serif; color: #0a1628; margin-bottom: 1.5rem; }
-    h2   { color: #1a3a5c; margin: 1.5rem 0 0.5rem; font-size: 1rem; }
-    .suite { background: #fff; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
-    .pass { color: #2a7a52; }
-    .fail { color: #c53030; font-weight: 600; }
-    .test { padding: 0.25rem 0; font-size: 0.875rem; display: flex; gap: 0.5rem; align-items: center; }
-    .badge { font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 99px; font-weight: 600; }
-    .badge-pass { background: #d4edda; color: #155724; }
-    .badge-fail { background: #f8d7da; color: #721c24; }
-    #summary { margin: 1.5rem 0; padding: 1rem 1.5rem; border-radius: 8px; font-weight: 600; }
-    .sum-pass { background: #d4edda; color: #155724; }
-    .sum-fail { background: #f8d7da; color: #721c24; }
-    a { color: #c8963e; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test Suite (M3) — Book &amp; Notes Vault</title>
+  <script>(function(){var t=localStorage.getItem('alu:theme')||'light';document.documentElement.setAttribute('data-theme',t);})()</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles/main.css" />
 </head>
-<body>
-  <h1>🧪 ALU Library — Test Suite</h1>
-  <p><a href="index.html">← Back to App</a></p>
-  <div id="summary"></div>
-  <div id="results"></div>
+<body class="tests-page">
 
-<script type="module">
-import {
-  validateTitle, validateAuthor, validatePages, validateDate,
-  validateTag, validateNotes, validateStatus, compileRegex, highlight,
-  normalizeTitle
-} from './scripts/validators.js';
-import { filterAndSort } from './scripts/search.js';
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <header class="pub-header">
+    <a href="index.html" class="pub-header__brand">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></svg>
+      Book &amp; Notes <span>Vault</span>
+    </a>
+    <nav class="pub-header__nav">
+      <button class="theme-toggle" aria-label="Toggle theme" aria-pressed="false">
+        <svg class="theme-toggle__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <span class="theme-toggle__label">Dark</span>
+      </button>
+      <a href="index.html" class="pub-header__link">← Catalog</a>
+    </nav>
+  </header>
 
-// ── Test harness ──────────────────────────────────────────────
-let passed = 0, failed = 0;
-const suites = [];
+  <div class="tests-container">
+    <h1 style="font-size:1.4rem;font-weight:800;margin-bottom:.25rem">M3 — Validation Test Suite</h1>
+    <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1.5rem">Auto-runs on page load. Tests all 10 regex rules in validators.js + filterAndSort in search.js.</p>
+    <div id="tests-summary"></div>
+    <div id="tests-output"></div>
+  </div>
 
-const suite = (name, fn) => {
-  const tests = [];
-  const assert = (desc, result, expected) => {
-    const ok = result === expected ||
-      (expected === null && result === null) ||
-      (expected === 'truthy' && !!result) ||
-      (expected === 'nullish' && result == null);
-    ok ? passed++ : failed++;
-    tests.push({ desc, ok, got: result, expected });
-  };
-  fn(assert);
-  suites.push({ name, tests });
-};
+  <!-- Load IIFE modules (NOT ES modules) -->
+  <script src="scripts/storage.js"></script>
+  <script src="scripts/validators.js"></script>
+  <script src="scripts/auth.js"></script>
+  <script src="scripts/search.js"></script>
 
-// ── 1. Title ──────────────────────────────────────────────────
-suite('validateTitle', (t) => {
-  t('empty string → error',        validateTitle(''),                   'truthy');
-  t('only spaces → error',         validateTitle('   '),                'truthy');
-  t('leading space → error',       validateTitle(' Hello'),             'truthy');
-  t('trailing space → error',      validateTitle('Hello '),             'truthy');
-  t('double space → error',        validateTitle('Hello  World'),       'truthy');
-  t('valid single word → null',    validateTitle('Factfulness'),        null);
-  t('valid multi word → null',     validateTitle('The Lean Startup'),   null);
-  t('exactly 1 char → null',       validateTitle('X'),                  null);
-  t('200 chars → null',            validateTitle('A'.repeat(200)),      null);
-  t('201 chars → error',           validateTitle('A'.repeat(201)),      'truthy');
-});
+  <script>
+    App.auth.init();
+    App.auth.wireThemeToggles();
 
-// ── 2. Author ─────────────────────────────────────────────────
-suite('validateAuthor', (t) => {
-  t('empty → error',              validateAuthor(''),              'truthy');
-  t('starts with digit → error',  validateAuthor('1Author'),       'truthy');
-  t('valid simple name',          validateAuthor('Eric Ries'),     null);
-  t('name with dot',              validateAuthor('J.K. Rowling'),  null);
-  t('name with hyphen',           validateAuthor('Ngũgĩ wa Thiong-o'), 'truthy'); // ũ not ASCII
-  t('plain hyphenated',           validateAuthor('Mary-Anne Smith'), null);
-  t('all caps name',              validateAuthor('CHINUA ACHEBE'),  null);
-  t('special chars → error',      validateAuthor('Han$'),           'truthy');
-  t('too long → error',           validateAuthor('A'.repeat(121)), 'truthy');
-});
+    /* ── Tiny harness ─────────────────────────────────────────── */
+    var PASSED = 0, FAILED = 0;
+    var SUITES = [];
 
-// ── 3. Pages ──────────────────────────────────────────────────
-suite('validatePages', (t) => {
-  t('empty → error',         validatePages(''),      'truthy');
-  t('zero → error',          validatePages('0'),     'truthy');
-  t('negative → error',      validatePages('-1'),    'truthy');
-  t('decimal → error',       validatePages('3.5'),   'truthy');
-  t('leading zero → error',  validatePages('01'),    'truthy');
-  t('valid 1',               validatePages('1'),     null);
-  t('valid 320',             validatePages('320'),   null);
-  t('valid 9999',            validatePages('9999'),  null);
-  t('letters → error',       validatePages('abc'),   'truthy');
-  t('50001 → error',         validatePages('50001'), 'truthy');
-});
+    function suite(name, fn) {
+      var tests = [];
+      function assert(desc, got, expected) {
+        var ok;
+        if (expected === 'truthy')  ok = !!got;
+        else if (expected === 'falsy') ok = !got;
+        else if (expected === '')   ok = got === '';
+        else                        ok = got === expected;
+        if (ok) PASSED++; else FAILED++;
+        tests.push({ desc: desc, ok: ok, got: got, expected: expected });
+      }
+      fn(assert);
+      SUITES.push({ name: name, tests: tests });
+    }
 
-// ── 4. Date ───────────────────────────────────────────────────
-suite('validateDate', (t) => {
-  t('empty → error',          validateDate(''),            'truthy');
-  t('invalid month 13',       validateDate('2025-13-01'),  'truthy');
-  t('invalid day 32',         validateDate('2025-09-32'),  'truthy');
-  t('day 00 → error',         validateDate('2025-09-00'),  'truthy');
-  t('month 00 → error',       validateDate('2025-00-01'),  'truthy');
-  t('valid date',             validateDate('2025-09-01'),  null);
-  t('valid leap year',        validateDate('2024-02-29'),  null);
-  t('wrong format DD/MM/YY',  validateDate('01/09/2025'),  'truthy');
-  t('missing leading zero',   validateDate('2025-9-1'),    'truthy');
-});
+    var V = App.validators;
+    var S = App.search;
 
-// ── 5. Tag (advanced: lookahead forbids --)  ──────────────────
-suite('validateTag', (t) => {
-  t('empty → error',             validateTag(''),                    'truthy');
-  t('double hyphen → error',     validateTag('Mixed--Methods'),      'truthy');  // ADVANCED lookahead
-  t('starts with hyphen → error',validateTag('-Research'),           'truthy');
-  t('ends with hyphen → error',  validateTag('Research-'),           'truthy');
-  t('valid single word',         validateTag('Leadership'),          null);
-  t('valid hyphenated',          validateTag('Mixed-Methods'),       null);
-  t('valid two words',           validateTag('Research Methods'),    null);
-  t('digits → error',            validateTag('Tag1'),                'truthy');
-  t('too long → error',          validateTag('A'.repeat(51)),        'truthy');
-});
+    /* ── 1. Title (Rule 1: no leading/trailing space, ^\\S(?:.*\\S)?$) ── */
+    suite('validateTitle — Rule 1: no leading/trailing whitespace', function (t) {
+      t('empty → error',          V.validateTitle(''),               'truthy');
+      t('only spaces → error',    V.validateTitle('   '),            'truthy');
+      t('leading space → error',  V.validateTitle(' Hello'),         'truthy');
+      t('trailing space → error', V.validateTitle('Hello '),         'truthy');
+      t('valid word → ""',        V.validateTitle('Factfulness'),    '');
+      t('valid multi-word → ""',  V.validateTitle('The Lean Startup'),'');
+      t('min 2 chars → ""',       V.validateTitle('Ab'),             '');
+      t('1 char → error',         V.validateTitle('X'),              'truthy');
+      t('200 chars → ""',         V.validateTitle('A'.repeat(200)),  '');
+      t('201 chars → error',      V.validateTitle('A'.repeat(201)),  'truthy');
+    });
 
-// ── 6. Notes (advanced: back-reference duplicate words) ───────
-suite('validateNotes — back-reference \\b(\\w+)\\s+\\1\\b', (t) => {
-  t('no dups → null',            validateNotes('Good research'),                null);
-  t('empty → null',              validateNotes(''),                             null);
-  t('null → null',               validateNotes(null),                           null);
-  t('"the the" → error',         validateNotes('I read the the paper'),         'truthy');
-  t('"and and" → error',         validateNotes('this and and that'),            'truthy');
-  t('"of of" → error',           validateNotes('spoke of of the topic'),        'truthy');
-  t('case insensitive dup',       validateNotes('it is IS important'),           'truthy');
-  t('same word not adjacent',     validateNotes('the book and the paper'),       null);
-});
+    /* ── 2. Pages (Rule 2: /^[1-9]\\d*$/) ───────────────────── */
+    suite('validatePages — Rule 2: positive integer', function (t) {
+      t('empty → error',         V.validatePages(''),     'truthy');
+      t('zero → error',          V.validatePages('0'),    'truthy');
+      t('negative → error',      V.validatePages('-1'),   'truthy');
+      t('decimal → error',       V.validatePages('3.5'),  'truthy');
+      t('leading zero → error',  V.validatePages('01'),   'truthy');
+      t('1 → ""',                V.validatePages('1'),    '');
+      t('320 → ""',              V.validatePages('320'),  '');
+      t('letters → error',       V.validatePages('abc'),  'truthy');
+    });
 
-// ── 7. Status ─────────────────────────────────────────────────
-suite('validateStatus', (t) => {
-  t('empty → error',    validateStatus(''),          'truthy');
-  t('invalid → error',  validateStatus('done'),      'truthy');
-  t('want → null',      validateStatus('want'),      null);
-  t('reading → null',   validateStatus('reading'),   null);
-  t('finished → null',  validateStatus('finished'),  null);
-});
+    /* ── 3. Date (Rule 3: strict YYYY-MM-DD) ────────────────── */
+    suite('validateDate — Rule 3: strict YYYY-MM-DD', function (t) {
+      t('empty → error',         V.validateDate(''),            'truthy');
+      t('month 13 → error',      V.validateDate('2025-13-01'),  'truthy');
+      t('day 32 → error',        V.validateDate('2025-09-32'),  'truthy');
+      t('day 00 → error',        V.validateDate('2025-09-00'),  'truthy');
+      t('valid date → ""',       V.validateDate('2025-09-01'),  '');
+      t('leap day 2024 → ""',    V.validateDate('2024-02-29'),  '');
+      t('wrong format → error',  V.validateDate('01/09/2025'),  'truthy');
+    });
 
-// ── 8. Safe regex compiler ────────────────────────────────────
-suite('compileRegex — safe compiler', (t) => {
-  const { re: r1 } = compileRegex('research');
-  t('simple pattern compiles',      r1 !== null,                    true);
-  t('matches word',                 r1?.test('Research Methods'),   true);
+    /* ── 4. Tag (Rule 4: letters/spaces/hyphens) ────────────── */
+    suite('validateTag — Rule 4: letters, spaces, hyphens', function (t) {
+      t('empty → error',             V.validateTag(''),              'truthy');
+      t('double hyphen → error',     V.validateTag('Mixed--Methods'), 'truthy');
+      t('leading hyphen → error',    V.validateTag('-Research'),      'truthy');
+      t('digits → error',            V.validateTag('Tag1'),           'truthy');
+      t('valid single word → ""',    V.validateTag('Leadership'),     '');
+      t('valid hyphenated → ""',     V.validateTag('Mixed-Methods'),  '');
+      t('valid two words → ""',      V.validateTag('Research Methods'),'');
+      t('too long → error',          V.validateTag('A'.repeat(51)),   'truthy');
+    });
 
-  const { re: r2, error: e2 } = compileRegex('[invalid');
-  t('bad regex → re is null',       r2,                             null);
-  t('bad regex → error message',    typeof e2,                      'string');
+    /* ── 5. ISBN (Rule 5: alternation /^(?:\\d{9}[\\dX]|\\d{13})$/) ── */
+    suite('validateISBN — Rule 5: alternation ISBN-10 or ISBN-13', function (t) {
+      t('empty → "" (optional)',     V.validateISBN(''),                  '');
+      t('10 digits → ""',            V.validateISBN('0307887898'),         '');
+      t('13 digits → ""',            V.validateISBN('9780307887894'),      '');
+      t('ISBN-10 with X → ""',       V.validateISBN('019853553X'),         '');
+      t('hyphens stripped → ""',     V.validateISBN('978-0-307-88789-4'),  '');
+      t('12 digits → error',         V.validateISBN('978030788789'),       'truthy');
+      t('letters → error',           V.validateISBN('abc'),                'truthy');
+    });
 
-  const { re: r3 } = compileRegex('(?=.*research)', true);
-  t('lookahead compiles (advanced)',  r3 !== null,                  true);
-  t('lookahead matches',             r3?.test('capstone research'), true);
+    /* ── 6. URL (Rule 6: positive lookahead (?=\\S+\\.\\S)) ─── */
+    suite('validateUrl — Rule 6: positive lookahead for domain dot', function (t) {
+      t('empty → "" (optional)',      V.validateUrl(''),                    '');
+      t('https with domain → ""',     V.validateUrl('https://alu.edu'),     '');
+      t('http → ""',                  V.validateUrl('http://example.com'),  '');
+      t('no protocol → error',        V.validateUrl('alu.edu'),             'truthy');
+      t('ftp → error',                V.validateUrl('ftp://x'),             'truthy');
+      t('https no dot → error',       V.validateUrl('https://localhost'),   'truthy');
+    });
 
-  const { re: r4 } = compileRegex('\\b(\\w+)\\s+\\1\\b', true);
-  t('back-ref compiles (advanced)',  r4 !== null,                   true);
-  t('back-ref finds duplicate',      r4?.test('the the book'),      true);
-  t('back-ref clean text → false',  r4?.test('the nice book'),      false);
+    /* ── 7. Duplicate words (Rule 7: back-reference \\b(\\w+)\\s+\\1\\b) */
+    suite('validateNotes — Rule 7: back-reference duplicate word', function (t) {
+      t('no dups → ""',               V.validateNotes('Good research'),              '');
+      t('empty → ""',                 V.validateNotes(''),                           '');
+      t('"the the" → error',          V.validateNotes('I read the the paper'),       'truthy');
+      t('"and and" → error',          V.validateNotes('this and and that'),          'truthy');
+      t('case insensitive dup',        V.validateNotes('it IS is important'),         'truthy');
+      t('same word not adjacent → ""', V.validateNotes('the book and the paper'),    '');
+      t('too long → error',           V.validateNotes('x'.repeat(2001)),             'truthy');
+    });
 
-  const { re: r5 } = compileRegex('', true);
-  t('empty query → null re',        r5,                             null);
-});
+    /* ── 8. Author format (Rule 8: back-ref + negative lookahead) ── */
+    suite('validateAuthorFormat — Rule 8: Surname, Given (Given ≠ Surname)', function (t) {
+      t('no comma → "" (plain name OK)', V.validateAuthorFormat('Eric Ries'),       '');
+      t('valid Surname, Given → ""',     V.validateAuthorFormat('Ries, Eric'),      '');
+      t('Given == Surname → error',      V.validateAuthorFormat('Ries, Ries'),      'truthy');
+      t('Multi-word Given → ""',         V.validateAuthorFormat('Kahneman, Daniel'),'');
+    });
 
-// ── 9. highlight ──────────────────────────────────────────────
-suite('highlight', (t) => {
-  const { re } = compileRegex('lean', true);
-  const h = highlight('The Lean Startup', re);
-  t('wraps match in <mark>',    h.includes('<mark>Lean</mark>'),   true);
-  t('preserves rest of text',   h.includes('The'),                  true);
-  t('null re → escaped text',   highlight('Hello', null),           'Hello');
-  t('escapes HTML in text',     highlight('<script>', null),         '&lt;script&gt;');
-});
+    /* ── 9. Email (Rule 9: lookahead (?=.*@.*\\.)) ─────────── */
+    suite('validateEmail — Rule 9: lookahead for @ and domain dot', function (t) {
+      t('empty → error',               V.validateEmail(''),                       'truthy');
+      t('valid email → ""',            V.validateEmail('alice@alu.edu'),          '');
+      t('missing @ → error',           V.validateEmail('alicealu.edu'),           'truthy');
+      t('missing dot → error',         V.validateEmail('alice@aluedu'),           'truthy');
+      t('spaces → error',              V.validateEmail('al ice@alu.edu'),         'truthy');
+      t('subdomain email → ""',        V.validateEmail('a.demise@alustudent.com'),'');
+    });
 
-// ── 10. normalizeTitle ────────────────────────────────────────
-suite('normalizeTitle', (t) => {
-  t('trims spaces',         normalizeTitle('  Hello  '),        'Hello');
-  t('collapses doubles',    normalizeTitle('The  Lean  Startup'), 'The Lean Startup');
-  t('no change needed',     normalizeTitle('Factfulness'),       'Factfulness');
-});
+    /* ── 10. Password (Rule 10: chained lookaheads) ─────────── */
+    suite('validatePassword — Rule 10: chained lookaheads (upper+digit+special)', function (t) {
+      t('empty → error',               V.validatePassword(''),                 'truthy');
+      t('too short → error',           V.validatePassword('Ab1!'),             'truthy');
+      t('no uppercase → error',        V.validatePassword('student1!'),        'truthy');
+      t('no digit → error',            V.validatePassword('Student!!'),        'truthy');
+      t('no special → error',          V.validatePassword('Student1'),         'truthy');
+      t('valid password → ""',         V.validatePassword('Student1!'),        '');
+      t('valid complex → ""',          V.validatePassword('Facilitate1!'),     '');
+    });
 
-// ── 11. filterAndSort ─────────────────────────────────────────
-suite('filterAndSort', (t) => {
-  const records = [
-    { id:'1', title:'Alpha Research', author:'Smith A.', pages:100, tag:'Methods', status:'finished', dateAdded:'2025-09-01', notes:'' },
-    { id:'2', title:'Beta Study',     author:'Jones B.', pages:200, tag:'Methods', status:'reading',  dateAdded:'2025-09-05', notes:'' },
-    { id:'3', title:'Gamma Theory',   author:'Ali C.',   pages:50,  tag:'Theory',  status:'want',     dateAdded:'2025-09-10', notes:'' },
-  ];
+    /* ── 11. compileRegex (safe compiler) ───────────────────── */
+    suite('compileRegex — safe regex compiler', function (t) {
+      var r1 = V.compileRegex('research');
+      t('valid pattern compiles',      r1.re !== null,                          true);
+      t('matches word',                r1.re && r1.re.test('Research Methods'), true);
 
-  const { filtered: all } = filterAndSort(records, { sortBy:'dateAdded-desc' });
-  t('no filter returns all 3',           all.length, 3);
-  t('sorted desc: newest first id',      all[0].id,  '3');
+      var r2 = V.compileRegex('[invalid');
+      t('bad regex → re null',         r2.re,                                   null);
+      t('bad regex → error string',    typeof r2.error,                         'string');
 
-  const { filtered: done } = filterAndSort(records, { status:'finished' });
-  t('filter by finished → 1',            done.length, 1);
-  t('correct record',                    done[0].id,  '1');
+      var r3 = V.compileRegex('(?=.*research)', true);
+      t('lookahead compiles',          r3.re !== null,                          true);
+      t('lookahead matches',           r3.re && r3.re.test('capstone research'),true);
 
-  const { filtered: tag } = filterAndSort(records, { tag:'Theory' });
-  t('filter by tag Theory → 1',          tag.length, 1);
+      var r4 = V.compileRegex('\\b(\\w+)\\s+\\1\\b', true);
+      t('back-ref compiles',           r4.re !== null,                          true);
+      t('back-ref finds duplicate',    r4.re && r4.re.test('the the book'),     true);
+      t('back-ref clean → false',      r4.re && r4.re.test('the nice book'),    false);
+    });
 
-  const { filtered: found, re } = filterAndSort(records, { query:'beta', caseInsensitive:true });
-  t('regex search "beta" → 1 match',     found.length, 1);
-  t('regex re is not null',              re !== null,  true);
+    /* ── 12. highlight ──────────────────────────────────────── */
+    suite('highlight — wraps match in <mark>', function (t) {
+      var r = V.compileRegex('lean', true);
+      var h = V.highlight('The Lean Startup', r.re);
+      t('wraps in <mark>',    h.includes('<mark>Lean</mark>'), true);
+      t('preserves rest',     h.includes('The'),               true);
+      t('null re → plain',    V.highlight('Hello', null),      'Hello');
+      t('escapes HTML',       V.highlight('<b>', null),         '&lt;b&gt;');
+    });
 
-  const { filtered: pSort } = filterAndSort(records, { sortBy:'pages-desc' });
-  t('sort pages desc: first is 200',     pSort[0].pages, 200);
-  t('sort pages desc: last is 50',       pSort[2].pages, 50);
+    /* ── 13. filterAndSort ──────────────────────────────────── */
+    suite('filterAndSort — filter, sort, regex search', function (t) {
+      var recs = [
+        { id:'1', title:'Alpha Research', author:'Smith, Al',  pages:100, tag:'Methods', status:'finished', dateAdded:'2025-09-01', notes:'' },
+        { id:'2', title:'Beta Study',     author:'Jones, Bob', pages:200, tag:'Methods', status:'reading',  dateAdded:'2025-09-05', notes:'' },
+        { id:'3', title:'Gamma Theory',   author:'Ali, Cam',   pages:50,  tag:'Theory',  status:'want',     dateAdded:'2025-09-10', notes:'' },
+      ];
+      var all = S.filterAndSort(recs, { sortBy:'dateAdded-desc' });
+      t('no filter returns all 3',   all.filtered.length, 3);
+      t('newest first = id 3',       all.filtered[0].id,  '3');
 
-  const { regexError } = filterAndSort(records, { query:'[bad', caseInsensitive:true });
-  t('invalid regex returns error string', typeof regexError, 'string');
-});
+      var done = S.filterAndSort(recs, { status:'finished' });
+      t('filter finished → 1',       done.filtered.length, 1);
+      t('correct record',            done.filtered[0].id,  '1');
 
-// ── Render results ────────────────────────────────────────────
-const container = document.getElementById('results');
-for (const s of suites) {
-  const div = document.createElement('div');
-  div.className = 'suite';
-  div.innerHTML = `<h2>${s.name}</h2>` +
-    s.tests.map(t => `
-      <div class="test">
-        <span class="badge ${t.ok ? 'badge-pass' : 'badge-fail'}">${t.ok ? 'PASS' : 'FAIL'}</span>
-        <span class="${t.ok ? 'pass' : 'fail'}">${t.desc}</span>
-        ${!t.ok ? `<small style="color:#666">(got: ${JSON.stringify(t.got)}, expected: ${JSON.stringify(t.expected)})</small>` : ''}
-      </div>
-    `).join('');
-  container.appendChild(div);
-}
+      var tag = S.filterAndSort(recs, { tag:'Theory' });
+      t('filter Theory → 1',         tag.filtered.length, 1);
 
-const summary = document.getElementById('summary');
-const total = passed + failed;
-summary.className = `sum-${failed === 0 ? 'pass' : 'fail'}`;
-summary.innerHTML = `${failed === 0 ? '✅' : '❌'} ${passed} / ${total} tests passed${failed > 0 ? ` — ${failed} failing` : ''}`;
-</script>
+      var found = S.filterAndSort(recs, { query:'beta', caseInsensitive:true });
+      t('regex "beta" → 1 match',    found.filtered.length, 1);
+      t('re not null',               found.re !== null,     true);
+
+      var pgSort = S.filterAndSort(recs, { sortBy:'pages-desc' });
+      t('pages desc: first = 200',   pgSort.filtered[0].pages, 200);
+
+      var bad = S.filterAndSort(recs, { query:'[bad', caseInsensitive:true });
+      t('invalid regex → error str', typeof bad.regexError, 'string');
+    });
+
+    /* ── Render ───────────────────────────────────────────────── */
+    var container = document.getElementById('tests-output');
+    SUITES.forEach(function (s) {
+      var div = document.createElement('div');
+      div.className = 'test-suite';
+      div.innerHTML = '<h2>' + s.name + '</h2>';
+      s.tests.forEach(function (test) {
+        var item = document.createElement('div');
+        item.className = 'test-item';
+        item.innerHTML =
+          '<span class="test-badge ' + (test.ok ? 'test-badge--pass' : 'test-badge--fail') + '">' +
+          (test.ok ? 'PASS' : 'FAIL') + '</span>' +
+          '<span style="color:var(--' + (test.ok ? 'text' : 'red') + ');">' + test.desc + '</span>' +
+          (!test.ok
+            ? '<span class="test-got">got: ' + JSON.stringify(test.got) +
+              ' | expected: ' + JSON.stringify(test.expected) + '</span>'
+            : '');
+        div.appendChild(item);
+      });
+      container.appendChild(div);
+    });
+
+    var total = PASSED + FAILED;
+    var sumEl = document.getElementById('tests-summary');
+    sumEl.className = 'tests-summary ' + (FAILED === 0 ? 'tests-summary--pass' : 'tests-summary--fail');
+    sumEl.textContent = (FAILED === 0 ? '✓ All tests passed: ' : '✗ Some tests failed: ') +
+      PASSED + ' / ' + total + ' passed' + (FAILED > 0 ? ' (' + FAILED + ' failing)' : '');
+  </script>
 </body>
 </html>

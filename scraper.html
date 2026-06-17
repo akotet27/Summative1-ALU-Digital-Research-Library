@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HTML Scraper — Book &amp; Notes Vault</title>
+  <script>(function(){var t=localStorage.getItem('alu:theme')||'light';document.documentElement.setAttribute('data-theme',t);})()</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body class="scraper-page">
+
+  <header class="pub-header">
+    <a href="index.html" class="pub-header__brand">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></svg>
+      Book &amp; Notes <span>Vault</span>
+    </a>
+    <nav class="pub-header__nav">
+      <button class="theme-toggle" aria-label="Toggle theme" aria-pressed="false">
+        <svg class="theme-toggle__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <span class="theme-toggle__label">Dark</span>
+      </button>
+      <a href="index.html" class="pub-header__link">← Catalog</a>
+    </nav>
+  </header>
+
+  <main class="scraper-container">
+    <h1 style="font-size:1.4rem;font-weight:800;margin-bottom:.25rem">Mini HTML Scraper</h1>
+    <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1.5rem">
+      Paste an HTML snippet, enter a CSS selector, and extract matching elements as JSON.
+      Uses <code>DOMParser</code> + native <code>querySelectorAll</code> (jQuery-like selectors).
+    </p>
+
+    <div class="scraper-grid">
+
+      <!-- ── Left panel: inputs ────────────────────────────── -->
+      <div class="scraper-panel">
+        <div class="scraper-panel__header">
+          <h2>Input</h2>
+          <button class="btn btn--ghost btn--sm" id="load-example">Load Example</button>
+        </div>
+
+        <label for="html-input" class="scraper-label">HTML Snippet</label>
+        <textarea
+          id="html-input"
+          class="scraper-code"
+          rows="12"
+          placeholder="Paste your HTML here…"
+          aria-label="HTML snippet to parse"
+          spellcheck="false"
+        ></textarea>
+
+        <label for="selector-input" class="scraper-label" style="margin-top:1rem">CSS Selector</label>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <input
+            type="text"
+            id="selector-input"
+            class="form-input"
+            placeholder="e.g.  li.book-item  |  .card h3  |  table tr"
+            aria-label="CSS selector"
+            autocomplete="off"
+            style="flex:1"
+          />
+          <button class="btn btn--primary" id="scrape-btn" aria-label="Run scraper">Scrape</button>
+        </div>
+
+        <div class="scraper-attributes" style="margin-top:.75rem">
+          <label class="scraper-label">Extract attributes (comma-separated, leave empty for text)</label>
+          <input
+            type="text"
+            id="attr-input"
+            class="form-input"
+            placeholder="e.g.  href,title  or  src,alt"
+            aria-label="Attributes to extract"
+            autocomplete="off"
+          />
+        </div>
+
+        <div style="margin-top:.75rem;font-size:.8rem;color:var(--text-muted)">
+          <strong>Selector cheatsheet:</strong>
+          <code>tag</code> &nbsp;·&nbsp; <code>.class</code> &nbsp;·&nbsp; <code>#id</code> &nbsp;·&nbsp;
+          <code>tag.class</code> &nbsp;·&nbsp; <code>parent &gt; child</code> &nbsp;·&nbsp;
+          <code>[attr]</code> &nbsp;·&nbsp; <code>[attr="val"]</code>
+        </div>
+      </div>
+
+      <!-- ── Right panel: output ───────────────────────────── -->
+      <div class="scraper-panel">
+        <div class="scraper-panel__header">
+          <h2>JSON Output</h2>
+          <div style="display:flex;gap:.5rem">
+            <button class="btn btn--ghost btn--sm" id="copy-btn" aria-label="Copy JSON to clipboard">Copy</button>
+            <button class="btn btn--ghost btn--sm" id="download-btn" aria-label="Download JSON file">Download</button>
+          </div>
+        </div>
+        <div id="scraper-status" class="scraper-status" role="status" aria-live="polite"></div>
+        <pre
+          id="scraper-output"
+          class="scraper-output"
+          tabindex="0"
+          aria-label="JSON output"
+        ><span style="color:var(--text-muted);font-style:italic">// Results will appear here…</span></pre>
+      </div>
+
+    </div>
+
+    <!-- ── Pre-built demos ────────────────────────────────── -->
+    <section style="margin-top:2rem">
+      <h2 style="font-size:1rem;font-weight:700;margin-bottom:.75rem">Quick Demos</h2>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="demo-btn btn btn--outline btn--sm" data-demo="booklist">Book List <code>li.book-item</code></button>
+        <button class="demo-btn btn btn--outline btn--sm" data-demo="table">Table Rows <code>table tr</code></button>
+        <button class="demo-btn btn btn--outline btn--sm" data-demo="cards">Article Cards <code>.card</code></button>
+        <button class="demo-btn btn btn--outline btn--sm" data-demo="links">Links <code>a[href]</code></button>
+      </div>
+    </section>
+  </main>
+
+  <script src="scripts/storage.js"></script>
+  <script src="scripts/auth.js"></script>
+
+  <script>
+    App.auth.init();
+    App.auth.wireThemeToggles();
+
+    /* ── Demo datasets ──────────────────────────────────────── */
+    var DEMOS = {
+      booklist: {
+        html: '<ul class="reading-list">\n  <li class="book-item" data-isbn="9780385333481">\n    <h3>The Lean Startup</h3>\n    <span class="author">Eric Ries</span>\n    <span class="pages">299 pages</span>\n    <em class="status">finished</em>\n  </li>\n  <li class="book-item" data-isbn="9780062312686">\n    <h3>Factfulness</h3>\n    <span class="author">Hans Rosling</span>\n    <span class="pages">352 pages</span>\n    <em class="status">reading</em>\n  </li>\n  <li class="book-item" data-isbn="9780385347754">\n    <h3>Thinking, Fast and Slow</h3>\n    <span class="author">Daniel Kahneman</span>\n    <span class="pages">499 pages</span>\n    <em class="status">want</em>\n  </li>\n</ul>',
+        selector: 'li.book-item',
+        attrs: ''
+      },
+      table: {
+        html: '<table class="students">\n  <thead><tr><th>Name</th><th>Class</th><th>Books</th></tr></thead>\n  <tbody>\n    <tr><td>Alice Kamara</td><td>CS-2025-A</td><td>5</td></tr>\n    <tr><td>Bob Mensah</td><td>BUS-2025-A</td><td>3</td></tr>\n    <tr><td>Clara Osei</td><td>ENV-2025-A</td><td>7</td></tr>\n    <tr><td>David Otieno</td><td>CS-2025-B</td><td>4</td></tr>\n  </tbody>\n</table>',
+        selector: 'tbody tr',
+        attrs: ''
+      },
+      cards: {
+        html: '<div class="catalog">\n  <article class="card" data-id="1">\n    <h3 class="card__title">Design Thinking</h3>\n    <p class="card__author">Tim Brown</p>\n    <span class="card__tag">Innovation</span>\n    <a href="/books/1" class="card__link">View details</a>\n  </article>\n  <article class="card" data-id="2">\n    <h3 class="card__title">Good to Great</h3>\n    <p class="card__author">Jim Collins</p>\n    <span class="card__tag">Leadership</span>\n    <a href="/books/2" class="card__link">View details</a>\n  </article>\n</div>',
+        selector: '.card',
+        attrs: ''
+      },
+      links: {
+        html: '<nav class="site-nav">\n  <a href="/home" title="Home page">Home</a>\n  <a href="/about" title="About us">About</a>\n  <a href="/catalog" title="Browse books">Catalog</a>\n  <a href="https://alu.edu" title="ALU website" target="_blank">ALU</a>\n</nav>',
+        selector: 'a[href]',
+        attrs: 'href,title'
+      }
+    };
+
+    /* ── Scraper engine ─────────────────────────────────────── */
+    function scrape(htmlStr, selector, attrsStr) {
+      if (!htmlStr.trim()) return { error: 'HTML snippet is empty.' };
+      if (!selector.trim()) return { error: 'CSS selector is empty.' };
+
+      var doc;
+      try {
+        doc = new DOMParser().parseFromString(htmlStr, 'text/html');
+      } catch (e) {
+        return { error: 'DOMParser failed: ' + e.message };
+      }
+
+      var nodes;
+      try {
+        nodes = Array.prototype.slice.call(doc.querySelectorAll(selector));
+      } catch (e) {
+        return { error: 'Invalid CSS selector: ' + e.message };
+      }
+
+      if (nodes.length === 0) {
+        return { warning: 'Selector "' + selector + '" matched 0 elements.', results: [] };
+      }
+
+      var attrs = attrsStr
+        ? attrsStr.split(',').map(function (a) { return a.trim(); }).filter(Boolean)
+        : [];
+
+      var results = nodes.map(function (el, i) {
+        var obj = { _index: i, _tag: el.tagName.toLowerCase() };
+
+        if (attrs.length > 0) {
+          attrs.forEach(function (attr) {
+            obj[attr] = el.getAttribute(attr) || null;
+          });
+          obj._text = el.textContent.replace(/\s+/g, ' ').trim();
+        } else {
+          obj._text = el.textContent.replace(/\s+/g, ' ').trim();
+          /* Also capture direct child text nodes & named children */
+          var children = {};
+          var seen = {};
+          Array.prototype.forEach.call(el.children, function (child) {
+            var key = child.className
+              ? child.className.split(' ')[0].replace(/[^a-zA-Z0-9_]/g, '_')
+              : child.tagName.toLowerCase();
+            if (!key) key = child.tagName.toLowerCase();
+            if (seen[key]) {
+              seen[key]++;
+              key = key + '_' + seen[key];
+            } else {
+              seen[key] = 1;
+            }
+            children[key] = child.textContent.replace(/\s+/g, ' ').trim();
+          });
+          if (Object.keys(children).length) obj._children = children;
+
+          /* data-* attributes */
+          var dataset = {};
+          Array.prototype.forEach.call(el.attributes, function (a) {
+            if (a.name.indexOf('data-') === 0) {
+              dataset[a.name.slice(5)] = a.value;
+            }
+          });
+          if (Object.keys(dataset).length) obj._data = dataset;
+        }
+
+        return obj;
+      });
+
+      return { selector: selector, count: results.length, results: results };
+    }
+
+    /* ── UI wiring ──────────────────────────────────────────── */
+    var htmlInput    = document.getElementById('html-input');
+    var selectorEl   = document.getElementById('selector-input');
+    var attrEl       = document.getElementById('attr-input');
+    var outputEl     = document.getElementById('scraper-output');
+    var statusEl     = document.getElementById('scraper-status');
+    var copyBtn      = document.getElementById('copy-btn');
+    var downloadBtn  = document.getElementById('download-btn');
+    var scrapeBtn    = document.getElementById('scrape-btn');
+    var loadExample  = document.getElementById('load-example');
+
+    var lastResult = null;
+
+    function showResult(data) {
+      lastResult = data;
+      outputEl.textContent = JSON.stringify(data, null, 2);
+
+      if (data.error) {
+        statusEl.textContent = '✗ Error: ' + data.error;
+        statusEl.style.color = 'var(--red)';
+      } else if (data.warning) {
+        statusEl.textContent = '⚠ ' + data.warning;
+        statusEl.style.color = 'var(--yellow, #ca8a04)';
+      } else {
+        statusEl.textContent = '✓ ' + data.count + ' element' + (data.count !== 1 ? 's' : '') + ' matched.';
+        statusEl.style.color = 'var(--green)';
+      }
+    }
+
+    scrapeBtn.addEventListener('click', function () {
+      showResult(scrape(htmlInput.value, selectorEl.value, attrEl.value));
+    });
+
+    selectorEl.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') scrapeBtn.click();
+    });
+
+    loadExample.addEventListener('click', function () {
+      var demo = DEMOS.booklist;
+      htmlInput.value    = demo.html;
+      selectorEl.value   = demo.selector;
+      attrEl.value       = demo.attrs;
+      scrapeBtn.click();
+    });
+
+    document.querySelectorAll('.demo-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var demo = DEMOS[btn.dataset.demo];
+        if (!demo) return;
+        htmlInput.value    = demo.html;
+        selectorEl.value   = demo.selector;
+        attrEl.value       = demo.attrs;
+        scrapeBtn.click();
+      });
+    });
+
+    copyBtn.addEventListener('click', function () {
+      if (!lastResult) return;
+      var text = JSON.stringify(lastResult, null, 2);
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function () {
+          copyBtn.textContent = 'Copied!';
+          setTimeout(function () { copyBtn.textContent = 'Copy'; }, 1500);
+        });
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyBtn.textContent = 'Copied!';
+        setTimeout(function () { copyBtn.textContent = 'Copy'; }, 1500);
+      }
+    });
+
+    downloadBtn.addEventListener('click', function () {
+      if (!lastResult) return;
+      var blob = new Blob([JSON.stringify(lastResult, null, 2)], { type: 'application/json' });
+      var url  = URL.createObjectURL(blob);
+      var a    = document.createElement('a');
+      a.href   = url;
+      a.download = 'scraped-' + Date.now() + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    /* Auto-load book-list demo on first visit */
+    (function () {
+      var demo = DEMOS.booklist;
+      htmlInput.value  = demo.html;
+      selectorEl.value = demo.selector;
+      attrEl.value     = demo.attrs;
+    })();
+  </script>
+</body>
+</html>

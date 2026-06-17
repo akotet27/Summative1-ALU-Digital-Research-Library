@@ -1,504 +1,277 @@
-/* scripts/app.js — IIFE Module: main application logic */
+/* scripts/app.js — Home page (index.html) catalog controller */
 ;(function (App) {
   'use strict';
 
-  var FOCUSABLE = 'button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])';
-
-  // Short-hand aliases
-  var state      = App.state;
+  var storage    = App.storage;
   var validators = App.validators;
   var search     = App.search;
-  var ui         = App.ui;
-  var storage    = App.storage;
+  var auth       = App.auth;
 
-  // ── Sidebar (mobile) ──────────────────────────────────────────
-  var sidebar  = document.getElementById('sidebar');
-  var backdrop = document.getElementById('sidebar-backdrop');
+  auth.init();
+  auth.wireThemeToggles();
 
-  function openSidebar() {
-    sidebar.classList.add('open');
-    backdrop.classList.add('active');
-    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', 'true');
-    document.getElementById('sidebar-close').focus();
-  }
-  function closeSidebar() {
-    sidebar.classList.remove('open');
-    backdrop.classList.remove('active');
-    var t = document.getElementById('sidebar-toggle');
-    if (t) t.setAttribute('aria-expanded', 'false');
-  }
+  /* Only show facilitator-approved books on the public home page */
+  var allRecs = storage.loadRecords().filter(function (r) { return r.approved === true; });
 
-  document.getElementById('sidebar-toggle').addEventListener('click', openSidebar);
-  document.getElementById('sidebar-close').addEventListener('click', closeSidebar);
-  backdrop.addEventListener('click', closeSidebar);
+  /* ── Hero stats ─────────────────────────────────────────────── */
+  (function buildHeroStats() {
+    var users    = storage.loadUsers();
+    var students = users.filter(function (u) { return u.role === 'student'; });
+    var tags     = {};
+    allRecs.forEach(function (r) { if (r.tag) tags[r.tag] = true; });
 
-  // ── Navigation ────────────────────────────────────────────────
-  function navigateTo(page) {
-    document.querySelectorAll('.page').forEach(function (p) {
-      p.classList.toggle('page--active', p.id === 'page-' + page);
+    function set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+    set('hero-stat-books',    allRecs.length);
+    set('hero-stat-students', students.length);
+    set('hero-stat-tags',     Object.keys(tags).length);
+  })();
+
+  /* ── Populate tag filter ────────────────────────────────────── */
+  (function buildTagFilter() {
+    var tags = {};
+    allRecs.forEach(function (r) { if (r.tag) tags[r.tag] = (tags[r.tag] || 0) + 1; });
+    var sel = document.getElementById('pub-tag');
+    if (!sel) return;
+    Object.keys(tags).sort().forEach(function (tag) {
+      var opt = document.createElement('option');
+      opt.value       = tag;
+      opt.textContent = tag + ' (' + tags[tag] + ')';
+      sel.appendChild(opt);
     });
-    document.querySelectorAll('.nav-link').forEach(function (a) {
-      var active = a.dataset.page === page;
-      a.classList.toggle('active', active);
-      if (active) a.setAttribute('aria-current', 'page');
-      else a.removeAttribute('aria-current');
-    });
+  })();
 
-    if (page === 'dashboard') ui.renderStats(state.getRecords(), state.getSettings());
-    if (page === 'library')   refreshLibrary();
-    if (page === 'settings')  loadSettingsForm();
-    if (page === 'add') {
-      document.getElementById('add-heading').textContent = 'Add Resource';
-      document.getElementById('resource-form').reset();
-      document.getElementById('f-date').value = todayStr();
-      clearErrors('f');
+  /* ── Helpers ────────────────────────────────────────────────── */
+  function escHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* TAG → cover-color map for books without an explicit coverColor */
+  var TAG_COLORS = {
+    'Entrepreneurship': '#0F4C35',
+    'Design':           '#6B1A2A',
+    'Leadership':       '#2D1B69',
+    'Data Science':     '#0D3D6B',
+    'Technology':       '#0F3D0F',
+    'Methodology':      '#1A3A1A',
+    'Policy':           '#3D1A0A',
+    'Economics':        '#1A1A3D',
+    'Ethics':           '#3D1A3D',
+    'Research':         '#1A3D3D',
+  };
+
+  function coverColor(rec) {
+    return rec.coverColor || TAG_COLORS[rec.tag] || '#1B4D3E';
+  }
+
+  /* ── Build card HTML ────────────────────────────────────────── */
+  function buildCard(rec, re) {
+    var titleHtml  = validators.highlight(rec.title  || '', re);
+    var authorHtml = validators.highlight(rec.author || '', re);
+    var tagHtml    = validators.highlight(rec.tag    || '', re);
+    var desc       = rec.description || '';
+    var shortDesc  = desc.slice(0, 155) + (desc.length > 155 ? '…' : '');
+    var color      = coverColor(rec);
+
+    return '<article class="book-card" role="listitem" tabindex="0"' +
+      ' data-id="' + escHtml(rec.id) + '"' +
+      ' aria-label="' + escHtml(rec.title) + ' by ' + escHtml(rec.author) + '">' +
+      '<div class="book-card__cover" style="background:' + escHtml(color) + '">' +
+        '<p class="book-card__cover-title">' + escHtml(rec.title) + '</p>' +
+        '<p class="book-card__cover-author">' + escHtml(rec.author || '') + '</p>' +
+      '</div>' +
+      '<div class="book-card__body">' +
+        (rec.tag ? '<span class="book-card__tag">' + tagHtml + '</span>' : '') +
+        '<h3 class="book-card__title">' + titleHtml + '</h3>' +
+        '<p class="book-card__desc">' + escHtml(shortDesc) + '</p>' +
+        '<div class="book-card__meta">' +
+          '<span class="book-card__pages">' + escHtml(String(rec.pages || '?')) + ' pp</span>' +
+          (rec.recommended ? '<span style="color:var(--accent);font-size:.82rem">Recommended</span>' : '') +
+        '</div>' +
+        '<button class="book-card__read-more" data-id="' + escHtml(rec.id) + '">Read More</button>' +
+      '</div>' +
+    '</article>';
+  }
+
+  /* ── Render catalog ─────────────────────────────────────────── */
+  function renderCatalog(filtered, re) {
+    var grid  = document.getElementById('catalog-grid');
+    var count = document.getElementById('catalog-count');
+    var empty = document.getElementById('catalog-empty');
+    if (!grid) return;
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '';
+      if (empty) empty.hidden = false;
+      if (count) count.textContent = '0 books';
+      return;
     }
-    closeSidebar();
-    window.scrollTo(0, 0);
-  }
+    if (empty) empty.hidden = true;
+    if (count) count.textContent = filtered.length + ' book' + (filtered.length !== 1 ? 's' : '');
+    grid.innerHTML = filtered.map(function (r) { return buildCard(r, re); }).join('');
 
-  // Wire nav clicks via event delegation
-  document.addEventListener('click', function (e) {
-    var link = e.target.closest('[data-page]');
-    if (link) { e.preventDefault(); navigateTo(link.dataset.page); }
-  });
-
-  // ── Library refresh ───────────────────────────────────────────
-  function getSearchState() {
-    return {
-      query:           document.getElementById('search-input').value,
-      caseInsensitive: !document.getElementById('search-case').checked,
-      status:          document.getElementById('filter-status').value,
-      tag:             document.getElementById('filter-tag').value,
-      sortBy:          document.getElementById('sort-by').value,
-    };
-  }
-
-  function refreshLibrary() {
-    var opts    = getSearchState();
-    var result  = search.filterAndSort(state.getRecords(), opts);
-    var hint    = document.getElementById('search-hint');
-    var inp     = document.getElementById('search-input');
-
-    if (result.regexError) {
-      hint.textContent = '⚠ ' + result.regexError;
-      inp.classList.add('search-error');
-    } else if (opts.query) {
-      hint.textContent = result.filtered.length + ' match' + (result.filtered.length !== 1 ? 'es' : '');
-      inp.classList.remove('search-error');
-    } else {
-      hint.textContent = '';
-      inp.classList.remove('search-error');
-    }
-
-    ui.populateTagFilter(state.getRecords());
-    ui.renderTable(result.filtered, result.re);
-  }
-
-  ['search-input', 'filter-status', 'filter-tag', 'sort-by'].forEach(function (id) {
-    var el = document.getElementById(id);
-    if (el) el.addEventListener('input', refreshLibrary);
-    if (el) el.addEventListener('change', refreshLibrary);
-  });
-  document.getElementById('search-case').addEventListener('change', refreshLibrary);
-  document.getElementById('clear-filters').addEventListener('click', function () {
-    document.getElementById('search-input').value  = '';
-    document.getElementById('filter-status').value = '';
-    document.getElementById('filter-tag').value    = '';
-    document.getElementById('sort-by').value       = 'dateAdded-desc';
-    refreshLibrary();
-  });
-
-  // ── Table row actions ─────────────────────────────────────────
-  document.getElementById('records-body').addEventListener('click', function (e) {
-    var btn = e.target.closest('[data-action]');
-    if (!btn) return;
-    var action = btn.dataset.action;
-    var id     = btn.dataset.id;
-
-    if (action === 'view') {
-      var rec = state.getRecords().find(function (r) { return r.id === id; });
-      if (rec) openViewModal(rec);
-    }
-    if (action === 'edit') {
-      var rec = state.getRecords().find(function (r) { return r.id === id; });
-      if (rec) openEditModal(rec);
-    }
-    if (action === 'delete') {
-      var rec = state.getRecords().find(function (r) { return r.id === id; });
-      if (rec) openConfirm('Delete "' + rec.title + '"?', function () {
-        state.deleteRecord(id);
-        refreshLibrary();
-        ui.renderStats(state.getRecords(), state.getSettings());
-        ui.showToast('Resource deleted.');
-        ui.announce('Resource deleted.');
-      });
-    }
-  });
-
-  // ── Bookshelf clicks ──────────────────────────────────────────
-  document.getElementById('bookshelf').addEventListener('click', function (e) {
-    var spine = e.target.closest('.book-spine');
-    if (!spine) return;
-    var rec = state.getRecords().find(function (r) { return r.id === spine.dataset.id; });
-    if (rec) openViewModal(rec);
-  });
-  document.getElementById('bookshelf').addEventListener('keydown', function (e) {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    e.preventDefault();
-    var spine = e.target.closest('.book-spine');
-    if (!spine) return;
-    var rec = state.getRecords().find(function (r) { return r.id === spine.dataset.id; });
-    if (rec) openViewModal(rec);
-  });
-
-  // ── VIEW MODAL ────────────────────────────────────────────────
-  var viewTrigger = null;
-  var currentViewRec = null;
-
-  function openViewModal(rec) {
-    currentViewRec = rec;
-    viewTrigger    = document.activeElement;
-
-    document.getElementById('view-spine').className = 'view-modal__spine view-modal__spine--' + rec.status;
-    document.getElementById('view-modal-title').textContent = rec.title;
-    document.getElementById('view-author').textContent      = 'by ' + rec.author;
-
-    var labels = { want: 'Want to Read', reading: 'Currently Reading', finished: 'Finished' };
-    document.getElementById('view-status').innerHTML =
-      '<span class="status-badge status-badge--' + rec.status + '">' +
-      '<span class="status-dot" aria-hidden="true"></span>' + labels[rec.status] + '</span>';
-
-    document.getElementById('view-pages').textContent = Number(rec.pages).toLocaleString() + ' pages';
-    document.getElementById('view-tag').textContent   = rec.tag;
-    document.getElementById('view-date').textContent  = fmtDate(rec.dateAdded);
-
-    var notesWrap = document.getElementById('view-notes');
-    if (rec.notes && rec.notes.trim()) {
-      document.getElementById('view-notes-text').textContent = rec.notes;
-      notesWrap.hidden = false;
-    } else {
-      notesWrap.hidden = true;
-    }
-
-    document.getElementById('view-modal').hidden = false;
-    document.getElementById('view-edit-btn').focus();
-    ui.announce('Viewing: ' + rec.title);
-  }
-
-  function closeViewModal() {
-    document.getElementById('view-modal').hidden = true;
-    currentViewRec = null;
-    if (viewTrigger && viewTrigger.focus) viewTrigger.focus();
-    viewTrigger = null;
-  }
-
-  document.getElementById('view-modal-close').addEventListener('click', closeViewModal);
-  document.getElementById('view-close-btn').addEventListener('click', closeViewModal);
-  document.getElementById('view-edit-btn').addEventListener('click', function () {
-    var rec = currentViewRec;
-    closeViewModal();
-    if (rec) openEditModal(rec);
-  });
-  document.getElementById('view-modal').addEventListener('click', function (e) {
-    if (e.target === e.currentTarget) closeViewModal();
-  });
-  document.getElementById('view-modal').addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeViewModal(); return; }
-    if (e.key === 'Tab') trapFocus(e, document.getElementById('view-modal'));
-  });
-
-  // ── EDIT MODAL ────────────────────────────────────────────────
-  var editTrigger = null;
-
-  function openEditModal(rec) {
-    editTrigger = document.activeElement;
-    document.getElementById('em-id').value     = rec.id;
-    document.getElementById('em-title').value  = rec.title;
-    document.getElementById('em-author').value = rec.author;
-    document.getElementById('em-pages').value  = rec.pages;
-    document.getElementById('em-date').value   = rec.dateAdded;
-    document.getElementById('em-tag').value    = rec.tag;
-    document.getElementById('em-status').value = rec.status;
-    document.getElementById('em-notes').value  = rec.notes || '';
-    clearErrors('em');
-    document.getElementById('edit-modal').hidden = false;
-    document.getElementById('em-title').focus();
-  }
-
-  function closeEditModal() {
-    document.getElementById('edit-modal').hidden = true;
-    if (editTrigger && editTrigger.focus) editTrigger.focus();
-    editTrigger = null;
-  }
-
-  document.getElementById('edit-modal-close').addEventListener('click', closeEditModal);
-  document.getElementById('edit-modal-cancel').addEventListener('click', closeEditModal);
-  document.getElementById('edit-modal').addEventListener('click', function (e) {
-    if (e.target === e.currentTarget) closeEditModal();
-  });
-  document.getElementById('edit-modal').addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeEditModal(); return; }
-    if (e.key === 'Tab') trapFocus(e, document.getElementById('edit-modal'));
-  });
-
-  document.getElementById('edit-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var f = {
-      title:  document.getElementById('em-title').value,
-      author: document.getElementById('em-author').value,
-      pages:  document.getElementById('em-pages').value,
-      date:   document.getElementById('em-date').value,
-      tag:    document.getElementById('em-tag').value,
-      status: document.getElementById('em-status').value,
-      notes:  document.getElementById('em-notes').value,
-    };
-    var result = validators.validateRecord(f);
-    showErrors('em', result.errors);
-    if (!result.isValid) { ui.announce(Object.values(result.errors)[0], true); return; }
-
-    state.updateRecord(document.getElementById('em-id').value, {
-      title:     validators.normalizeTitle(f.title),
-      author:    f.author.trim(),
-      pages:     parseInt(f.pages, 10),
-      dateAdded: f.date.trim(),
-      tag:       f.tag.trim(),
-      status:    f.status,
-      notes:     f.notes.trim(),
-    });
-    closeEditModal();
-    refreshLibrary();
-    ui.renderStats(state.getRecords(), state.getSettings());
-    ui.showToast('Resource updated.');
-    ui.announce('Resource updated.');
-  });
-
-  // Live blur validation — edit modal
-  var editValidators = { 'em-title': 'validateTitle', 'em-author': 'validateAuthor', 'em-pages': 'validatePages', 'em-date': 'validateDate', 'em-tag': 'validateTag', 'em-status': 'validateStatus', 'em-notes': 'validateNotes' };
-  Object.keys(editValidators).forEach(function (id) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('blur', function () {
-      setFieldError(id, validators[editValidators[id]](el.value));
-    });
-  });
-
-  // ── ADD FORM ──────────────────────────────────────────────────
-  var addValidators = { 'f-title': 'validateTitle', 'f-author': 'validateAuthor', 'f-pages': 'validatePages', 'f-date': 'validateDate', 'f-tag': 'validateTag', 'f-status': 'validateStatus', 'f-notes': 'validateNotes' };
-  Object.keys(addValidators).forEach(function (id) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('blur', function () {
-      setFieldError(id, validators[addValidators[id]](el.value));
-    });
-  });
-
-  document.getElementById('resource-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var f = {
-      title:  document.getElementById('f-title').value,
-      author: document.getElementById('f-author').value,
-      pages:  document.getElementById('f-pages').value,
-      date:   document.getElementById('f-date').value,
-      tag:    document.getElementById('f-tag').value,
-      status: document.getElementById('f-status').value,
-      notes:  document.getElementById('f-notes').value,
-    };
-    var result = validators.validateRecord(f);
-    showErrors('f', result.errors);
-    if (!result.isValid) { ui.announce(Object.values(result.errors)[0], true); return; }
-
-    var now = new Date().toISOString();
-    state.addRecord({
-      id:        state.generateId(),
-      title:     validators.normalizeTitle(f.title),
-      author:    f.author.trim(),
-      pages:     parseInt(f.pages, 10),
-      dateAdded: f.date.trim(),
-      tag:       f.tag.trim(),
-      status:    f.status,
-      notes:     f.notes.trim(),
-      createdAt: now, updatedAt: now,
-    });
-    document.getElementById('resource-form').reset();
-    document.getElementById('f-date').value = todayStr();
-    clearErrors('f');
-    ui.showToast('Resource added!');
-    ui.announce('Resource added successfully.');
-    navigateTo('library');
-  });
-
-  // ── Page Converter ────────────────────────────────────────────
-  document.getElementById('conv-input').addEventListener('input', function (e) {
-    var pages = Number(e.target.value);
-    var ppm   = Number(state.getSettings().ppm || 1.5);
-    var el    = document.getElementById('conversion-results');
-    if (!pages || pages <= 0) { el.innerHTML = ''; return; }
-    var mins = pages / ppm;
-    var hrs  = mins / 60;
-    el.innerHTML =
-      '<div>At <strong>' + ppm + '</strong> pages/min:</div>' +
-      '<div><strong>' + Math.round(mins) + '</strong> minutes</div>' +
-      '<div><strong>' + hrs.toFixed(1) + '</strong> hours</div>' +
-      '<div><strong>' + (hrs / 8).toFixed(1) + '</strong> work-days (8 hrs)</div>';
-  });
-
-  // ── Settings ──────────────────────────────────────────────────
-  function loadSettingsForm() {
-    var s = state.getSettings();
-    document.getElementById('s-goal').value = s.goal || '';
-    document.getElementById('s-ppm').value  = s.ppm  || 1.5;
-  }
-
-  document.getElementById('save-goal-btn').addEventListener('click', function () {
-    var val = Number(document.getElementById('s-goal').value);
-    state.updateSettings({ goal: val >= 0 ? val : 0 });
-    ui.renderStats(state.getRecords(), state.getSettings());
-    ui.showToast('Goal saved.');
-    ui.announce('Reading goal saved.');
-  });
-
-  document.getElementById('save-units-btn').addEventListener('click', function () {
-    var val = parseFloat(document.getElementById('s-ppm').value);
-    if (!val || val <= 0) { ui.showToast('Enter a valid reading speed.'); return; }
-    state.updateSettings({ ppm: val });
-    ui.showToast('Reading speed saved.');
-    ui.announce('Reading speed saved.');
-  });
-
-  document.getElementById('clear-data-btn').addEventListener('click', function () {
-    openConfirm('Delete ALL resources? This cannot be undone.', function () {
-      state.replaceAll([]);
-      ui.renderStats(state.getRecords(), state.getSettings());
-      refreshLibrary();
-      ui.showToast('All data cleared.');
-      ui.announce('All data cleared.', true);
-    });
-  });
-
-  // ── Import / Export ───────────────────────────────────────────
-  document.getElementById('export-btn').addEventListener('click', function () {
-    var blob = new Blob([JSON.stringify(state.getRecords(), null, 2)], { type: 'application/json' });
-    var url  = URL.createObjectURL(blob);
-    var a    = document.createElement('a');
-    a.href     = url;
-    a.download = 'alu-library-' + todayStr() + '.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    ui.showToast('Library exported.');
-    ui.announce('Library exported as JSON.');
-  });
-
-  document.getElementById('import-file').addEventListener('change', function (e) {
-    var file = e.target.files[0];
-    if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function (ev) {
-      try {
-        var data = JSON.parse(ev.target.result);
-        if (!storage.validateImport(data)) {
-          ui.showToast('⚠ Invalid JSON structure — import failed.');
-          ui.announce('Import failed: invalid structure.', true);
-          return;
-        }
-        openConfirm('Import ' + data.length + ' records? This replaces your current library.', function () {
-          var now = new Date().toISOString();
-          state.replaceAll(data.map(function (r) {
-            return Object.assign({ createdAt: now, updatedAt: now }, r);
-          }));
-          refreshLibrary();
-          ui.renderStats(state.getRecords(), state.getSettings());
-          ui.showToast('Imported ' + data.length + ' resources.');
-          ui.announce('Imported ' + data.length + ' resources.');
-        });
-      } catch (err) {
-        ui.showToast('⚠ Could not parse JSON file.');
-        ui.announce('Import failed: could not parse file.', true);
+    /* Wire card click and keyboard open */
+    grid.querySelectorAll('.book-card').forEach(function (card) {
+      function openCard() {
+        var id  = card.dataset.id;
+        var rec = allRecs.find(function (r) { return r.id === id; });
+        if (rec) openBookModal(rec);
       }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  });
+      card.addEventListener('click', function (e) {
+        if (e.target.classList.contains('book-card__read-more')) return;
+        openCard();
+      });
+      card.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCard(); }
+      });
+    });
 
-  // ── CONFIRM MODAL ─────────────────────────────────────────────
-  var pendingConfirm  = null;
-  var confirmTrigger  = null;
-
-  function openConfirm(msg, callback) {
-    pendingConfirm  = callback;
-    confirmTrigger  = document.activeElement;
-    document.getElementById('confirm-body').textContent = msg;
-    document.getElementById('confirm-overlay').hidden   = false;
-    document.getElementById('confirm-yes').focus();
-  }
-  function closeConfirm() {
-    document.getElementById('confirm-overlay').hidden = true;
-    pendingConfirm = null;
-    if (confirmTrigger && confirmTrigger.focus) confirmTrigger.focus();
-    confirmTrigger = null;
+    grid.querySelectorAll('.book-card__read-more').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var id  = btn.dataset.id;
+        var rec = allRecs.find(function (r) { return r.id === id; });
+        if (rec) openBookModal(rec);
+      });
+    });
   }
 
-  document.getElementById('confirm-yes').addEventListener('click', function () {
-    if (pendingConfirm) pendingConfirm();
-    closeConfirm();
-  });
-  document.getElementById('confirm-no').addEventListener('click', closeConfirm);
-  document.getElementById('confirm-overlay').addEventListener('click', function (e) {
-    if (e.target === e.currentTarget) closeConfirm();
-  });
-  document.getElementById('confirm-overlay').addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeConfirm(); return; }
-    if (e.key === 'Tab') trapFocus(e, document.getElementById('confirm-overlay'));
-  });
+  /* ── Filter state ───────────────────────────────────────────── */
+  var currentQuery = '';
+  var currentTag   = '';
+  var currentSort  = 'dateAdded-desc';
+  var recOnly      = false;
 
-  // Global Escape
+  function applyFilters() {
+    var base = allRecs.slice();
+    if (recOnly)      base = base.filter(function (r) { return r.recommended; });
+    if (currentTag)   base = base.filter(function (r) { return r.tag === currentTag; });
+
+    var result = search.filterAndSort(base, {
+      query: currentQuery, caseInsensitive: true, sortBy: currentSort
+    });
+
+    var hint = document.getElementById('pub-search-hint');
+    if (hint) {
+      if (result.regexError) {
+        hint.textContent = 'Regex error: ' + result.regexError;
+        hint.style.color = 'var(--red)';
+      } else if (currentQuery && result.re) {
+        hint.textContent = result.filtered.length + ' match' + (result.filtered.length !== 1 ? 'es' : '');
+        hint.style.color = 'var(--green)';
+      } else {
+        hint.textContent = '';
+      }
+    }
+
+    renderCatalog(result.filtered, result.re);
+  }
+
+  /* ── Event listeners ────────────────────────────────────────── */
+  var debounceTimer;
+
+  function wireSearch(inputId) {
+    var inp = document.getElementById(inputId);
+    if (!inp) return;
+    inp.addEventListener('input', function () {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function () {
+        var pubSearch = document.getElementById('pub-search');
+        var heroSearch = document.getElementById('hero-search');
+        /* Sync both inputs */
+        if (inputId === 'hero-search' && pubSearch) pubSearch.value = inp.value;
+        if (inputId === 'pub-search'  && heroSearch) heroSearch.value = inp.value;
+        currentQuery = inp.value;
+        applyFilters();
+        if (inputId === 'hero-search') {
+          var catalog = document.getElementById('catalog');
+          if (catalog) catalog.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 220);
+    });
+  }
+  wireSearch('pub-search');
+  wireSearch('hero-search');
+
+  var heroSearchBtn = document.getElementById('hero-search-btn');
+  if (heroSearchBtn) {
+    heroSearchBtn.addEventListener('click', function () {
+      var inp = document.getElementById('hero-search');
+      if (inp) { currentQuery = inp.value; applyFilters(); }
+      var catalog = document.getElementById('catalog');
+      if (catalog) catalog.scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+
+  var tagSel = document.getElementById('pub-tag');
+  if (tagSel) {
+    tagSel.addEventListener('change', function () { currentTag = tagSel.value; applyFilters(); });
+  }
+
+  var sortSel = document.getElementById('pub-sort');
+  if (sortSel) {
+    sortSel.addEventListener('change', function () { currentSort = sortSel.value; applyFilters(); });
+  }
+
+  var recCheck = document.getElementById('pub-rec-only');
+  if (recCheck) {
+    recCheck.addEventListener('change', function () { recOnly = recCheck.checked; applyFilters(); });
+  }
+
+  /* ── Book modal ─────────────────────────────────────────────── */
+  var bookModal = document.getElementById('book-modal');
+
+  function openBookModal(rec) {
+    if (!bookModal) return;
+
+    function set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+    function setHtml(id, html) { var el = document.getElementById(id); if (el) el.innerHTML = html; }
+
+    var coverEl = document.getElementById('book-modal-cover');
+    if (coverEl) coverEl.style.background = coverColor(rec);
+
+    set('book-modal-tag',    rec.tag    || '');
+    set('book-modal-title',  rec.title  || '');
+    set('book-modal-author', rec.author || '');
+    set('book-modal-desc-text', rec.description || 'No description available for this book.');
+
+    var metaEl = document.getElementById('book-modal-meta');
+    if (metaEl) {
+      var meta = [];
+      if (rec.pages)     meta.push('<span>' + escHtml(String(rec.pages)) + ' pages</span>');
+      if (rec.dateAdded) meta.push('<span>Added ' + escHtml(rec.dateAdded) + '</span>');
+      if (rec.isbn)      meta.push('<span>ISBN: ' + escHtml(rec.isbn) + '</span>');
+      if (rec.recommended) meta.push('<span style="color:var(--accent)">Recommended</span>');
+      metaEl.innerHTML = meta.join('');
+    }
+
+    bookModal.hidden = false;
+    var closeBtn = document.getElementById('book-modal-close');
+    if (closeBtn) closeBtn.focus();
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeBookModal() {
+    if (!bookModal) return;
+    bookModal.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  var closeBtn   = document.getElementById('book-modal-close');
+  var closeBtnBt = document.getElementById('book-modal-close-btn');
+  if (closeBtn)   closeBtn.addEventListener('click', closeBookModal);
+  if (closeBtnBt) closeBtnBt.addEventListener('click', closeBookModal);
+  if (bookModal) {
+    bookModal.addEventListener('click', function (e) {
+      if (e.target === bookModal) closeBookModal();
+    });
+  }
   document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Escape') return;
-    if (!document.getElementById('view-modal').hidden)    closeViewModal();
-    if (!document.getElementById('edit-modal').hidden)    closeEditModal();
-    if (!document.getElementById('confirm-overlay').hidden) closeConfirm();
-    if (sidebar.classList.contains('open'))              closeSidebar();
+    if (e.key === 'Escape' && bookModal && !bookModal.hidden) closeBookModal();
   });
 
-  // ── Helpers ───────────────────────────────────────────────────
-  function trapFocus(e, container) {
-    var focusable = Array.from(container.querySelectorAll(FOCUSABLE));
-    if (!focusable.length) return;
-    var first = focusable[0], last = focusable[focusable.length - 1];
-    if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
-    else            { if (document.activeElement === last)  { e.preventDefault(); first.focus(); } }
-  }
-
-  function setFieldError(id, msg) {
-    var input = document.getElementById(id);
-    var err   = document.getElementById(id + '-err');
-    if (!input) return;
-    if (err) err.textContent = msg || '';
-    input.classList.toggle('invalid', !!msg);
-    input.classList.toggle('valid',   !msg && input.value.trim() !== '');
-  }
-
-  function clearErrors(prefix) {
-    ['title','author','pages','date','tag','status','notes'].forEach(function (f) {
-      setFieldError(prefix + '-' + f, '');
-    });
-  }
-
-  function showErrors(prefix, errors) {
-    ['title','author','pages','date','tag','status','notes'].forEach(function (f) {
-      setFieldError(prefix + '-' + f, errors[f] || '');
-    });
-  }
-
-  function todayStr() { return new Date().toISOString().slice(0, 10); }
-  function fmtDate(str) {
-    if (!str) return '—';
-    try { return new Date(str + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
-    catch (e) { return str; }
-  }
-
-  // ── Init ──────────────────────────────────────────────────────
-  document.getElementById('f-date').value = todayStr();
-  navigateTo('dashboard');
+  /* ── Initial render ─────────────────────────────────────────── */
+  applyFilters();
 
 })(window.App = window.App || {});

@@ -3,514 +3,211 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ALU Library — Capstone Research Tracker</title>
+  <title>Ethiolab — Ethiopia's Digital Research Library</title>
+  <meta name="description" content="Explore peer-reviewed and facilitator-approved research resources curated by ALU students." />
+  <script>(function(){var t=localStorage.getItem('alu:theme')||'light';document.documentElement.setAttribute('data-theme',t);})()</script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles/main.css" />
 </head>
 <body>
 
   <a href="#main-content" class="skip-link">Skip to main content</a>
+  <div role="status" aria-live="polite" aria-atomic="true" class="sr-only" id="live-polite"></div>
 
-  <!-- Mobile top bar -->
-  <header class="topbar" aria-label="Mobile navigation bar">
-    <button class="topbar__menu" id="sidebar-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-    </button>
-    <span class="topbar__title">ALU Library</span>
-  </header>
+  <!-- ── Navigation ─────────────────────────────────────────── -->
+  <nav class="site-nav site-nav--transparent" id="site-nav" aria-label="Main navigation">
+    <a href="index.html" class="site-nav__logo" aria-label="Ethiolab home">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/>
+      </svg>
+      <span class="site-nav__logo-text">Ethiolab</span>
+    </a>
 
-  <!-- Sidebar backdrop -->
-  <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
+    <div class="site-nav__links" id="nav-links">
+      <a href="index.html" class="site-nav__link site-nav__link--active">Home</a>
+      <a href="#catalog"   class="site-nav__link">Books</a>
+    </div>
 
-  <!-- Sidebar -->
-  <nav class="sidebar" id="sidebar" aria-label="Main navigation">
-    <div class="sidebar__header">
-      <div class="sidebar__brand">
-        <div class="sidebar__logo" aria-hidden="true">
-          <span class="logo-spine logo-spine--want"></span>
-          <span class="logo-spine logo-spine--reading"></span>
-          <span class="logo-spine logo-spine--done"></span>
-        </div>
-        <div>
-          <span class="sidebar__name">ALU Library</span>
-          <span class="sidebar__sub">Capstone Tracker</span>
-        </div>
-      </div>
-      <button class="sidebar__close" id="sidebar-close" aria-label="Close navigation menu">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    <div class="site-nav__cta" style="display:flex;align-items:center;gap:.75rem">
+      <button class="theme-toggle" aria-label="Toggle theme" aria-pressed="false">
+        <svg class="theme-toggle__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <span class="theme-toggle__label">Dark</span>
       </button>
+      <a href="login.html" class="btn btn--primary btn--sm">Sign In</a>
     </div>
 
-    <ul class="nav-list" role="list">
-      <li><a href="#" class="nav-link active" data-page="dashboard" aria-current="page">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
-        <span>Dashboard</span>
-      </a></li>
-      <li><a href="#" class="nav-link" data-page="library">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></svg>
-        <span>My Library</span>
-      </a></li>
-      <li><a href="#" class="nav-link" data-page="add">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
-        <span>Add Resource</span>
-      </a></li>
-      <li><a href="#" class="nav-link" data-page="settings">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-        <span>Settings</span>
-      </a></li>
-      <li><a href="#" class="nav-link" data-page="about">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-        <span>About</span>
-      </a></li>
-    </ul>
-
-    <div class="sidebar__cap">
-      <div class="cap-header">
-        <span class="cap-label">Reading Goal</span>
-        <span class="cap-text" id="cap-text">No goal set</span>
-      </div>
-      <div class="cap-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Reading goal progress">
-        <div class="cap-fill" id="cap-fill"></div>
-      </div>
-    </div>
+    <button class="site-nav__hamburger" id="nav-toggle"
+            aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-links">
+      <span></span><span></span><span></span>
+    </button>
   </nav>
 
-  <!-- Main Content -->
-  <main id="main-content" class="main-content">
-    <div role="status" aria-live="polite" aria-atomic="true" class="sr-only" id="live-polite"></div>
-    <div role="alert" aria-live="assertive" aria-atomic="true" class="sr-only" id="live-assertive"></div>
-    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
-
-    <!-- DASHBOARD -->
-    <section id="page-dashboard" class="page page--active" aria-labelledby="dashboard-heading">
-      <header class="page-header">
-        <h1 id="dashboard-heading">Dashboard</h1>
-        <p class="page-subtitle">Your capstone reading at a glance</p>
-      </header>
-
-      <div class="stats-grid">
-        <div class="stat-card stat-card--total">
-          <div class="stat-card__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
-          </div>
-          <div class="stat-card__body">
-            <span class="stat-card__value" id="stat-total">0</span>
-            <span class="stat-card__label">Total Resources</span>
-          </div>
-        </div>
-        <div class="stat-card stat-card--want">
-          <div class="stat-card__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
-          </div>
-          <div class="stat-card__body">
-            <span class="stat-card__value" id="stat-want">0</span>
-            <span class="stat-card__label">Want to Read</span>
-          </div>
-        </div>
-        <div class="stat-card stat-card--reading">
-          <div class="stat-card__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-          </div>
-          <div class="stat-card__body">
-            <span class="stat-card__value" id="stat-reading">0</span>
-            <span class="stat-card__label">Currently Reading</span>
-          </div>
-        </div>
-        <div class="stat-card stat-card--done">
-          <div class="stat-card__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
-          </div>
-          <div class="stat-card__body">
-            <span class="stat-card__value" id="stat-done">0</span>
-            <span class="stat-card__label">Finished</span>
-          </div>
-        </div>
-        <div class="stat-card stat-card--pages">
-          <div class="stat-card__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
-          </div>
-          <div class="stat-card__body">
-            <span class="stat-card__value" id="stat-pages">0</span>
-            <span class="stat-card__label">Pages Read</span>
-          </div>
-        </div>
-        <div class="stat-card stat-card--tag">
-          <div class="stat-card__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>
-          </div>
-          <div class="stat-card__body">
-            <span class="stat-card__value stat-card__value--sm" id="stat-top-tag">—</span>
-            <span class="stat-card__label">Top Tag</span>
-          </div>
-        </div>
+  <!-- ── Hero ────────────────────────────────────────────────── -->
+  <section class="hero"
+           style="background-image:url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1920&q=80')"
+           aria-labelledby="hero-title">
+    <div class="hero__overlay"></div>
+    <div class="hero__content">
+      <span class="hero__badge">Ethiopia's Digital Research Library</span>
+      <h1 class="hero__title" id="hero-title">
+        Discover Knowledge<br /><span>Beyond Borders</span>
+      </h1>
+      <p class="hero__subtitle">
+        Facilitator-approved research resources curated by the ALU community.
+        Browse, search, and build your academic foundation.
+      </p>
+      <div class="hero__search" role="search" aria-label="Search the library">
+        <input type="text" class="hero__search-input" id="hero-search"
+               placeholder="Search books, authors, topics…"
+               autocomplete="off" aria-label="Search books" />
+        <button class="hero__search-btn" id="hero-search-btn" type="button" aria-label="Submit search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
+        </button>
       </div>
+      <div class="hero__stats" aria-live="polite">
+        <div class="hero__stat"><strong id="hero-stat-books">—</strong><span>Books</span></div>
+        <div class="hero__stat"><strong id="hero-stat-students">—</strong><span>Researchers</span></div>
+        <div class="hero__stat"><strong id="hero-stat-tags">—</strong><span>Topics</span></div>
+      </div>
+    </div>
+  </section>
 
-      <div class="cap-message" id="cap-message" aria-live="polite" hidden></div>
+  <!-- ── Catalog ─────────────────────────────────────────────── -->
+  <main id="main-content">
+    <section class="catalog-section" id="catalog" aria-labelledby="catalog-heading">
 
-      <section class="chart-section" aria-labelledby="chart-heading">
-        <h2 id="chart-heading">Resources Added — Last 7 Days</h2>
-        <div class="bar-chart" id="bar-chart" role="img" aria-label="Bar chart: resources added in last 7 days"></div>
-      </section>
+      <div class="catalog-controls">
+        <h2 id="catalog-heading">Curated Library</h2>
+        <div class="filter-bar" role="search" aria-label="Filter and sort books">
+          <div class="search-wrap">
+            <span class="search-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+              </svg>
+            </span>
+            <label for="pub-search" class="sr-only">Search books (supports regex)</label>
+            <input type="text" id="pub-search" class="search-input"
+                   placeholder="Search title, author, tag… (regex OK)"
+                   autocomplete="off" />
+            <div class="search-options">
+              <span class="search-hint" id="pub-search-hint" aria-live="polite"></span>
+            </div>
+          </div>
 
-      <section class="shelf-section" aria-labelledby="shelf-heading">
-        <h2 id="shelf-heading">Your Bookshelf <span class="shelf-hint">Click a spine to view</span></h2>
-        <div class="bookshelf" id="bookshelf" aria-label="Visual bookshelf — click a spine to view that resource">
-          <p class="empty-state" id="shelf-empty">No resources yet. <a href="#" data-page="add">Add your first one</a></p>
-        </div>
-      </section>
-    </section>
+          <label for="pub-tag" class="sr-only">Filter by topic</label>
+          <select id="pub-tag" class="filter-select">
+            <option value="">All Topics</option>
+          </select>
 
-    <!-- LIBRARY -->
-    <section id="page-library" class="page" aria-labelledby="library-heading">
-      <header class="page-header">
-        <h1 id="library-heading">My Library</h1>
-        <div class="page-header__actions">
-          <button class="btn btn--sm btn--outline" id="export-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-            Export JSON
-          </button>
-          <label class="btn btn--sm btn--outline" for="import-file">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-            Import JSON
-            <input type="file" id="import-file" accept=".json" class="sr-only" aria-label="Choose JSON file to import" />
+          <label for="pub-sort" class="sr-only">Sort by</label>
+          <select id="pub-sort" class="filter-select">
+            <option value="dateAdded-desc">Newest First</option>
+            <option value="title-asc">Title A–Z</option>
+            <option value="pages-desc">Most Pages</option>
+          </select>
+
+          <label class="toggle-label" style="font-size:.82rem;color:var(--text-muted);white-space:nowrap">
+            <input type="checkbox" id="pub-rec-only" /> Recommended only
           </label>
         </div>
-      </header>
-
-      <div class="library-controls">
-        <div class="search-wrap">
-          <span class="search-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          </span>
-          <label for="search-input" class="sr-only">Search library (supports regex)</label>
-          <input type="text" id="search-input" class="search-input" placeholder="Search or type a regex pattern…" autocomplete="off" />
-          <div class="search-options">
-            <label class="toggle-label">
-              <input type="checkbox" id="search-case" /> <span>Aa</span>
-            </label>
-            <span class="search-hint" id="search-hint" aria-live="polite"></span>
-          </div>
-        </div>
-        <div class="filter-row">
-          <label for="filter-status" class="sr-only">Filter by status</label>
-          <select id="filter-status" class="filter-select">
-            <option value="">All Statuses</option>
-            <option value="want">Want to Read</option>
-            <option value="reading">Reading</option>
-            <option value="finished">Finished</option>
-          </select>
-          <label for="filter-tag" class="sr-only">Filter by tag</label>
-          <select id="filter-tag" class="filter-select"><option value="">All Tags</option></select>
-          <label for="sort-by" class="sr-only">Sort records</label>
-          <select id="sort-by" class="filter-select">
-            <option value="dateAdded-desc">Newest First</option>
-            <option value="dateAdded-asc">Oldest First</option>
-            <option value="title-asc">Title A→Z</option>
-            <option value="title-desc">Title Z→A</option>
-            <option value="pages-desc">Most Pages</option>
-            <option value="pages-asc">Fewest Pages</option>
-          </select>
-          <button class="btn btn--sm btn--ghost" id="clear-filters">Clear</button>
-        </div>
       </div>
 
-      <p class="records-count" id="records-count" aria-live="polite">Loading…</p>
+      <p class="records-count" id="catalog-count" aria-live="polite">Loading…</p>
 
-      <div class="table-wrap" role="region" aria-label="Library records" tabindex="0">
-        <table class="records-table" id="records-table">
-          <thead>
-            <tr>
-              <th scope="col" class="col-spine" aria-label="Status colour"></th>
-              <th scope="col" class="col-title">Title</th>
-              <th scope="col" class="col-author">Author</th>
-              <th scope="col" class="col-pages">Pages</th>
-              <th scope="col" class="col-tag">Tag</th>
-              <th scope="col" class="col-status">Status</th>
-              <th scope="col" class="col-date">Added</th>
-              <th scope="col" class="col-actions">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="records-body"></tbody>
-        </table>
-        <p class="empty-state" id="table-empty" hidden>No resources match your search.</p>
+      <div class="catalog-grid" id="catalog-grid" role="list" aria-label="Book catalog"></div>
+
+      <div class="empty-state" id="catalog-empty" hidden>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/>
+        </svg>
+        <h3>No books found</h3>
+        <p>Try adjusting your search or clearing the filters.</p>
       </div>
     </section>
 
-    <!-- ADD RESOURCE -->
-    <section id="page-add" class="page" aria-labelledby="add-heading">
-      <header class="page-header">
-        <h1 id="add-heading">Add Resource</h1>
-        <p class="page-subtitle">Track a new book, paper, or article for your capstone</p>
-      </header>
-      <form class="resource-form" id="resource-form" novalidate aria-label="Add a new resource">
-        <div class="form-group">
-          <label for="f-title" class="form-label">Title <span class="required" aria-hidden="true">*</span></label>
-          <input type="text" id="f-title" class="form-input" required aria-required="true" aria-describedby="f-title-err" placeholder="e.g. The Lean Startup" />
-          <span class="form-error" id="f-title-err" role="alert"></span>
-        </div>
-        <div class="form-group">
-          <label for="f-author" class="form-label">Author <span class="required" aria-hidden="true">*</span></label>
-          <input type="text" id="f-author" class="form-input" required aria-required="true" aria-describedby="f-author-err" placeholder="e.g. Eric Ries" />
-          <span class="form-error" id="f-author-err" role="alert"></span>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="f-pages" class="form-label">Pages <span class="required" aria-hidden="true">*</span></label>
-            <input type="text" id="f-pages" class="form-input" required aria-required="true" aria-describedby="f-pages-err" placeholder="e.g. 320" inputmode="numeric" />
-            <span class="form-error" id="f-pages-err" role="alert"></span>
-          </div>
-          <div class="form-group">
-            <label for="f-date" class="form-label">Date Added <span class="required" aria-hidden="true">*</span></label>
-            <input type="text" id="f-date" class="form-input" required aria-required="true" aria-describedby="f-date-err" placeholder="YYYY-MM-DD" />
-            <span class="form-error" id="f-date-err" role="alert"></span>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="f-tag" class="form-label">Tag <span class="required" aria-hidden="true">*</span></label>
-            <input type="text" id="f-tag" class="form-input" required aria-required="true" aria-describedby="f-tag-err" placeholder="e.g. Research Methods" />
-            <span class="form-error" id="f-tag-err" role="alert"></span>
-          </div>
-          <div class="form-group">
-            <label for="f-status" class="form-label">Status <span class="required" aria-hidden="true">*</span></label>
-            <select id="f-status" class="form-input form-select" required aria-required="true" aria-describedby="f-status-err">
-              <option value="">Select status…</option>
-              <option value="want">Want to Read</option>
-              <option value="reading">Currently Reading</option>
-              <option value="finished">Finished</option>
-            </select>
-            <span class="form-error" id="f-status-err" role="alert"></span>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="f-notes" class="form-label">Notes <span class="optional">(optional)</span></label>
-          <textarea id="f-notes" class="form-input form-textarea" aria-describedby="f-notes-hint f-notes-err" placeholder="Key takeaways, quotes, or reflections…" rows="4"></textarea>
-          <span class="form-hint" id="f-notes-hint">Duplicate-word detection active (e.g. "the the" will be flagged).</span>
-          <span class="form-error" id="f-notes-err" role="alert"></span>
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn--primary" id="submit-btn">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg>
-            Save Resource
-          </button>
-        </div>
-      </form>
-
-      <aside class="converter-card" aria-labelledby="converter-heading">
-        <h2 id="converter-heading" class="converter-card__title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Page Converter
-        </h2>
-        <div class="converter-body">
-          <label for="conv-input" class="form-label">Enter page count</label>
-          <input type="number" id="conv-input" class="form-input converter-input" min="0" placeholder="e.g. 320" />
-          <div class="conversion-results" id="conversion-results" aria-live="polite"></div>
-        </div>
-      </aside>
-    </section>
-
-    <!-- SETTINGS -->
-    <section id="page-settings" class="page" aria-labelledby="settings-heading">
-      <header class="page-header">
-        <h1 id="settings-heading">Settings</h1>
-        <p class="page-subtitle">Customise your tracker</p>
-      </header>
-      <div class="settings-grid">
-        <div class="settings-card">
-          <h2 class="settings-card__title">Reading Goal</h2>
-          <p class="settings-card__desc">Set a target number of resources to finish for your capstone.</p>
-          <div class="form-group">
-            <label for="s-goal" class="form-label">Target resources</label>
-            <input type="number" id="s-goal" class="form-input" min="0" placeholder="e.g. 25" aria-describedby="s-goal-hint" />
-            <span class="form-hint" id="s-goal-hint">Set to 0 to disable.</span>
-          </div>
-          <button class="btn btn--primary" id="save-goal-btn">Save Goal</button>
-        </div>
-        <div class="settings-card">
-          <h2 class="settings-card__title">Reading Speed</h2>
-          <p class="settings-card__desc">Used by the page converter on the Add Resource page.</p>
-          <div class="form-group">
-            <label for="s-ppm" class="form-label">Pages per minute</label>
-            <input type="number" id="s-ppm" class="form-input" min="0.1" step="0.1" placeholder="e.g. 1.5" aria-describedby="s-ppm-hint" />
-            <span class="form-hint" id="s-ppm-hint">Average adult reads ~1–2 pages/min.</span>
-          </div>
-          <button class="btn btn--primary" id="save-units-btn">Save Speed</button>
-        </div>
-        <div class="settings-card settings-card--danger">
-          <h2 class="settings-card__title">Danger Zone</h2>
-          <p class="settings-card__desc">Permanent — cannot be undone.</p>
-          <button class="btn btn--danger" id="clear-data-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-            Clear All Data
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ABOUT -->
-    <section id="page-about" class="page" aria-labelledby="about-heading">
-      <header class="page-header"><h1 id="about-heading">About</h1></header>
-      <div class="about-content">
-        <div class="about-hero">
-          <div class="about-spines" aria-hidden="true">
-            <span class="spine spine--want"></span>
-            <span class="spine spine--reading"></span>
-            <span class="spine spine--reading"></span>
-            <span class="spine spine--done"></span>
-            <span class="spine spine--want"></span>
-            <span class="spine spine--done"></span>
-          </div>
-          <div class="about-hero__text">
-            <h2 class="about-tagline">Track your reading journey through your final year.</h2>
-            <p>Built for ALU students managing research papers, textbooks, and articles for their capstone project.</p>
-          </div>
-        </div>
-        <div class="about-features">
-          <div class="about-feature">
-            <span class="about-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg></span>
-            <div><h3>Want to Read</h3><p>Save resources for later — build your reading queue before your capstone sprint.</p></div>
-          </div>
-          <div class="about-feature">
-            <span class="about-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
-            <div><h3>Currently Reading</h3><p>Mark what you're actively working through so nothing slips.</p></div>
-          </div>
-          <div class="about-feature">
-            <span class="about-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg></span>
-            <div><h3>Finished</h3><p>Log completed resources with notes and key takeaways for your write-up.</p></div>
-          </div>
-        </div>
-        <div class="about-contact">
-          <h2>Contact</h2>
-          <p>Built as part of ALU's Building Responsive UI module.</p>
-          <div class="contact-links">
-            <a href="https://github.com" class="contact-link" target="_blank" rel="noopener noreferrer">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
-              GitHub
-            </a>
-            <a href="mailto:student@alustudent.com" class="contact-link">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-              student@alustudent.com
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
+    <footer style="padding:2rem 1.5rem;border-top:1px solid var(--border);display:flex;gap:1.5rem;flex-wrap:wrap;font-size:.82rem;color:var(--text-muted);max-width:1280px;margin:0 auto">
+      <a href="login.html"     style="color:var(--text-muted)">Sign In / Register</a>
+      <a href="dashboard.html" style="color:var(--text-muted)">Student Dashboard</a>
+      <span style="margin-left:auto">Ethiolab &copy; 2025 · ALU Capstone Project</span>
+    </footer>
   </main>
 
-  <!-- VIEW MODAL -->
-  <div class="modal-overlay" id="view-modal" role="dialog" aria-modal="true" aria-labelledby="view-modal-title" hidden>
-    <div class="modal modal--view">
-      <button class="modal__close" id="view-modal-close" aria-label="Close book details">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+  <!-- ── Book Detail Modal ───────────────────────────────────── -->
+  <div class="modal-overlay" id="book-modal" role="dialog" aria-modal="true"
+       aria-labelledby="book-modal-title" hidden>
+    <div class="modal modal--book book-modal">
+      <button class="modal__close" id="book-modal-close" aria-label="Close book details">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+        </svg>
       </button>
-      <div class="view-modal__spine" id="view-spine" aria-hidden="true"></div>
-      <div class="view-modal__body">
-        <div class="view-modal__status" id="view-status"></div>
-        <h2 class="view-modal__title" id="view-modal-title"></h2>
-        <p class="view-modal__author" id="view-author"></p>
-        <div class="view-modal__meta">
-          <span class="view-meta-item" id="view-pages"></span>
-          <span class="view-meta-item" id="view-tag"></span>
-          <span class="view-meta-item" id="view-date"></span>
+      <div class="book-modal__cover" id="book-modal-cover">
+        <div class="book-modal__cover-content">
+          <span class="book-modal__tag"  id="book-modal-tag"></span>
+          <h2 class="book-modal__title" id="book-modal-title"></h2>
+          <p class="book-modal__author" id="book-modal-author"></p>
         </div>
-        <div class="view-modal__notes" id="view-notes" hidden>
-          <h3>Notes</h3>
-          <p id="view-notes-text"></p>
+      </div>
+      <div class="book-modal__body">
+        <div class="book-modal__meta" id="book-modal-meta"></div>
+        <div class="book-modal__desc">
+          <h3>About this Book</h3>
+          <p id="book-modal-desc-text"></p>
         </div>
       </div>
       <div class="modal__actions">
-        <button class="btn btn--primary" id="view-edit-btn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
-          Edit
-        </button>
-        <button class="btn btn--ghost" id="view-close-btn">Close</button>
+        <a href="login.html" class="btn btn--primary">Sign in to track this book</a>
+        <button class="btn btn--ghost" id="book-modal-close-btn">Close</button>
       </div>
     </div>
   </div>
 
-  <!-- EDIT MODAL -->
-  <div class="modal-overlay" id="edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title" hidden>
-    <div class="modal modal--edit">
-      <button class="modal__close" id="edit-modal-close" aria-label="Close edit form">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-      </button>
-      <h2 class="modal__title" id="edit-modal-title">Edit Resource</h2>
-      <form id="edit-form" novalidate aria-label="Edit resource form">
-        <input type="hidden" id="em-id" />
-        <div class="form-group">
-          <label for="em-title" class="form-label">Title <span class="required" aria-hidden="true">*</span></label>
-          <input type="text" id="em-title" class="form-input" required aria-required="true" aria-describedby="em-title-err" />
-          <span class="form-error" id="em-title-err" role="alert"></span>
-        </div>
-        <div class="form-group">
-          <label for="em-author" class="form-label">Author <span class="required" aria-hidden="true">*</span></label>
-          <input type="text" id="em-author" class="form-input" required aria-required="true" aria-describedby="em-author-err" />
-          <span class="form-error" id="em-author-err" role="alert"></span>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="em-pages" class="form-label">Pages <span class="required" aria-hidden="true">*</span></label>
-            <input type="text" id="em-pages" class="form-input" required aria-required="true" aria-describedby="em-pages-err" inputmode="numeric" />
-            <span class="form-error" id="em-pages-err" role="alert"></span>
-          </div>
-          <div class="form-group">
-            <label for="em-date" class="form-label">Date Added <span class="required" aria-hidden="true">*</span></label>
-            <input type="text" id="em-date" class="form-input" required aria-required="true" aria-describedby="em-date-err" placeholder="YYYY-MM-DD" />
-            <span class="form-error" id="em-date-err" role="alert"></span>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="em-tag" class="form-label">Tag <span class="required" aria-hidden="true">*</span></label>
-            <input type="text" id="em-tag" class="form-input" required aria-required="true" aria-describedby="em-tag-err" />
-            <span class="form-error" id="em-tag-err" role="alert"></span>
-          </div>
-          <div class="form-group">
-            <label for="em-status" class="form-label">Status <span class="required" aria-hidden="true">*</span></label>
-            <select id="em-status" class="form-input form-select" required aria-required="true">
-              <option value="want">Want to Read</option>
-              <option value="reading">Currently Reading</option>
-              <option value="finished">Finished</option>
-            </select>
-            <span class="form-error" id="em-status-err" role="alert"></span>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="em-notes" class="form-label">Notes <span class="optional">(optional)</span></label>
-          <textarea id="em-notes" class="form-input form-textarea" aria-describedby="em-notes-err" rows="3"></textarea>
-          <span class="form-error" id="em-notes-err" role="alert"></span>
-        </div>
-        <div class="modal__actions modal__actions--form">
-          <button type="submit" class="btn btn--primary">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg>
-            Save Changes
-          </button>
-          <button type="button" class="btn btn--ghost" id="edit-modal-cancel">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- CONFIRM MODAL -->
-  <div class="modal-overlay" id="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title" hidden>
-    <div class="modal modal--confirm">
-      <h2 id="confirm-title" class="modal__title">Confirm Action</h2>
-      <p class="modal__body" id="confirm-body"></p>
-      <div class="modal__actions">
-        <button class="btn btn--danger" id="confirm-yes">Delete</button>
-        <button class="btn btn--ghost" id="confirm-no">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Scripts loaded as regular scripts in dependency order — IIFE pattern -->
   <script src="scripts/storage.js"></script>
   <script src="scripts/validators.js"></script>
-  <script src="scripts/state.js"></script>
+  <script src="scripts/auth.js"></script>
   <script src="scripts/search.js"></script>
-  <script src="scripts/ui.js"></script>
   <script src="scripts/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(function(){});
+    }
+    /* Nav solid-on-scroll */
+    (function () {
+      var nav  = document.getElementById('site-nav');
+      var hero = document.querySelector('.hero');
+      if (!nav || !hero) return;
+      function onScroll() {
+        if (hero.getBoundingClientRect().bottom <= 64) {
+          nav.classList.replace('site-nav--transparent', 'site-nav--solid');
+        } else {
+          nav.classList.replace('site-nav--solid', 'site-nav--transparent');
+        }
+      }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    })();
+    /* Mobile hamburger */
+    (function () {
+      var toggle = document.getElementById('nav-toggle');
+      var links  = document.getElementById('nav-links');
+      if (!toggle || !links) return;
+      toggle.addEventListener('click', function () {
+        var open = links.classList.toggle('is-open');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    })();
+  </script>
 </body>
 </html>
