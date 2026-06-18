@@ -3715,7 +3715,6 @@ mark {
 }
 
 /* ═══════════════════════════════════════════════════════════
-<<<<<<< HEAD
    DASHBOARD SECTIONS — chart / shelf / notes preview
    ═══════════════════════════════════════════════════════════ */
 .chart-section {
@@ -4069,8 +4068,6 @@ mark {
 [data-theme="dark"] .view-modal__desc { background: var(--bg-offset); border-left-color: var(--primary-mid); color: var(--text-muted); }
 
 /* ═══════════════════════════════════════════════════════════
-=======
->>>>>>> aa124d7942f8ccc6e35420a914fa3bb2a24cf2ea
    REDUCED MOTION
    ═══════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
