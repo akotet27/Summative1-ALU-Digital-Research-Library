@@ -983,6 +983,7 @@
 
     var noteBtn = el('view-edit-btn');
     if (noteBtn) noteBtn.onclick = function () { closeViewModal(); openNoteModal(null, rec.id); };
+<<<<<<< HEAD
 
     /* Description / summary */
     var descEl = el('view-desc');
@@ -1026,6 +1027,8 @@
         reqBtn.hidden = true;
       }
     }
+=======
+>>>>>>> aa124d7942f8ccc6e35420a914fa3bb2a24cf2ea
 
     viewModal.hidden = false;
     el('view-modal-close').focus();

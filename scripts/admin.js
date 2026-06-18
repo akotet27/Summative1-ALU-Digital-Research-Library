@@ -207,6 +207,7 @@
   /* ── Pending Approvals page — tabbed ────────────────────────── */
   var currentApprovalsTab = 'notes';
 
+<<<<<<< HEAD
   function refreshApprovals() {
     updateAllApprovalBadges();
     if (currentApprovalsTab === 'notes')    renderNotesApprovals();
@@ -267,6 +268,12 @@
     if (pending.length === 0 && reviewed.length === 0) {
       container.innerHTML = '<div class="empty-state" style="padding:2rem"><p>No notes to review yet.</p></div>';
       return;
+=======
+    var badge = el('pending-badge');
+    if (badge) {
+      if (pending.length > 0) { badge.textContent = pending.length; badge.style.display = 'inline-flex'; }
+      else badge.style.display = 'none';
+>>>>>>> aa124d7942f8ccc6e35420a914fa3bb2a24cf2ea
     }
 
     function buildNoteCard(n, dim) {
@@ -412,8 +419,13 @@
               '<p class="pending-card__author">' + escHtml(r.author || '—') + '</p>' +
             '</div>' +
             '<div class="pending-card__actions">' +
+<<<<<<< HEAD
               '<button class="btn btn--sm btn--primary approve-book-btn" data-id="' + escHtml(r.id) + '">Approve</button>' +
               '<button class="btn btn--sm btn--danger reject-book-btn" data-id="' + escHtml(r.id) + '">Reject</button>' +
+=======
+              '<button class="btn btn--sm btn--primary approve-btn" data-id="' + escHtml(r.id) + '">Approve</button>' +
+              '<button class="btn btn--sm btn--danger reject-btn" data-id="' + escHtml(r.id) + '">Reject</button>' +
+>>>>>>> aa124d7942f8ccc6e35420a914fa3bb2a24cf2ea
             '</div>' +
           '</div>' +
           '<div class="pending-card__meta">' +
@@ -436,7 +448,11 @@
               '<p class="pending-card__author">' + escHtml(r.author || '—') + ' · ' + escHtml(user.name || 'Unknown') + '</p>' +
             '</div>' +
             '<div class="pending-card__actions">' +
+<<<<<<< HEAD
               '<button class="btn btn--sm btn--outline approve-book-btn" data-id="' + escHtml(r.id) + '">Approve instead</button>' +
+=======
+              '<button class="btn btn--sm btn--outline approve-btn" data-id="' + escHtml(r.id) + '">Approve instead</button>' +
+>>>>>>> aa124d7942f8ccc6e35420a914fa3bb2a24cf2ea
             '</div>' +
           '</div>' +
           '<p style="font-size:.82rem;color:var(--red);font-style:italic;padding:.35rem 0">Rejected: "' + escHtml(r.rejectedReason) + '"</p>' +
@@ -447,7 +463,11 @@
     container.innerHTML = html;
     container.querySelectorAll('.approve-book-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
+<<<<<<< HEAD
         openConfirm('Approve and publish this book?', function () {
+=======
+        openConfirm('Approve this book?', function () {
+>>>>>>> aa124d7942f8ccc6e35420a914fa3bb2a24cf2ea
           storage.approveRecord(btn.dataset.id, userId);
           toast('Book approved and published to the catalog.');
           updateAllApprovalBadges();
@@ -549,8 +569,12 @@
     storage.rejectRecord(recordId, reason);
     toast('Submission rejected.');
     closeRejectModal();
+<<<<<<< HEAD
     updateAllApprovalBadges();
     renderBooksApprovals();
+=======
+    refreshApprovals();
+>>>>>>> aa124d7942f8ccc6e35420a914fa3bb2a24cf2ea
   });
 
   /* Update the pending badge on page load */
@@ -1324,7 +1348,10 @@
     if (e.key !== 'Escape') return;
     if (bookFormModal     && !bookFormModal.hidden)     { closeBookFormModal();     return; }
     if (studentEditModal  && !studentEditModal.hidden)  { closeStudentEditModal();  return; }
+<<<<<<< HEAD
     if (noteReviewModal   && !noteReviewModal.hidden)   { closeNoteReviewModal();   return; }
+=======
+>>>>>>> aa124d7942f8ccc6e35420a914fa3bb2a24cf2ea
     if (rejectModal       && !rejectModal.hidden)       { closeRejectModal();       return; }
     if (viewModal         && !viewModal.hidden)         { closeViewModal();         return; }
     if (confirmOverlay    && !confirmOverlay.hidden)    { closeConfirm();           return; }
