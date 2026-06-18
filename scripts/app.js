@@ -222,7 +222,7 @@
         hint.style.color = 'var(--red)';
       } else if (currentQuery && result.re) {
         hint.textContent = result.filtered.length + ' match' + (result.filtered.length !== 1 ? 'es' : '');
-        hint.style.color = 'var(--green)';
+        hint.style.color = 'var(--primary-light)';
       } else {
         hint.textContent = '';
       }

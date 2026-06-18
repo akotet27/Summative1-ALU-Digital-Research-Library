@@ -654,6 +654,11 @@
         recs.forEach(function (r) {
           if (tagMap[r.tag]) { r.tag = tagMap[r.tag]; changed = true; }
         });
+        /* Merge any new seed records not yet in storage */
+        var existingIds = recs.map(function (r) { return r.id; });
+        SEED_RECORDS.forEach(function (sr) {
+          if (existingIds.indexOf(sr.id) === -1) { recs.push(sr); changed = true; }
+        });
         if (changed) this.saveRecords(recs);
       }
       /* Migration: update user classes to new BSE/BEL/IBT codes */

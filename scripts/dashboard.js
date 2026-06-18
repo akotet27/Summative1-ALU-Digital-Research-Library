@@ -97,7 +97,6 @@
     if (page === 'books')     refreshBooks();
     if (page === 'library')   refreshLibrary();
     if (page === 'notes')     refreshNotes();
-    if (page === 'add')       resetAddForm();
     if (page === 'profile')   loadProfile();
     if (page === 'settings')  loadSettings();
   }
@@ -119,10 +118,11 @@
   });
 
   /* ── Cap bar ─────────────────────────────────────────────────── */
-  function updateCapBar(recs) {
+  function updateCapBar() {
     var s        = storage.loadUserSettings(userId);
     var goal     = s.goal || 0;
-    var finished = recs.filter(function (r) { return r.status === 'finished'; }).length;
+    var progs    = storage.getUserProgress(userId);
+    var finished = progs.filter(function (p) { return p.completed; }).length;
     var capText  = el('cap-text');
     var capFill  = el('cap-fill');
     var capMsg   = el('cap-message');
@@ -156,35 +156,35 @@
 
   /* ── Dashboard page ──────────────────────────────────────────── */
   function refreshDashboard() {
-    var recs  = myRecords();
+    var libs  = facBooks();
     var notes = myNotes();
+    var progs = storage.getUserProgress(userId);
 
-    var finished = recs.filter(function (r) { return r.status === 'finished'; });
-    var reading  = recs.filter(function (r) { return r.status === 'reading'; });
-    var want     = recs.filter(function (r) { return r.status === 'want'; });
-    var totalPgs = finished.reduce(function (s, r) { return s + (Number(r.pages) || 0); }, 0);
+    var inProgress = progs.filter(function (p) { return p.percent > 0 && !p.completed; });
+    var completed  = progs.filter(function (p) { return p.completed; });
+    var totalPages = completed.reduce(function (s, p) { return s + (p.totalPages || 0); }, 0);
 
     var tagCounts = {};
-    recs.forEach(function (r) { if (r.tag) tagCounts[r.tag] = (tagCounts[r.tag] || 0) + 1; });
+    libs.forEach(function (r) { if (r.tag) tagCounts[r.tag] = (tagCounts[r.tag] || 0) + 1; });
     var topTag = Object.keys(tagCounts).sort(function (a, b) { return tagCounts[b] - tagCounts[a]; })[0] || '—';
 
     function set(id, v) { var e = el(id); if (e) e.textContent = v; }
-    set('stat-total',   recs.length);
-    set('stat-want',    want.length);
-    set('stat-reading', reading.length);
-    set('stat-done',    finished.length);
-    set('stat-pages',   totalPgs.toLocaleString());
+    set('stat-total',   libs.length);
+    set('stat-want',    notes.length);
+    set('stat-reading', inProgress.length);
+    set('stat-done',    completed.length);
+    set('stat-pages',   totalPages.toLocaleString());
     set('stat-top-tag', topTag);
 
-    updateCapBar(recs);
-    renderBarChart(recs);
-    renderBookshelf(recs);
-    renderNotesPreview(notes, recs);
-    announce('Dashboard updated. ' + recs.length + ' resource' + (recs.length !== 1 ? 's' : '') + ' in your library.');
+    updateCapBar();
+    renderBarChart(notes);
+    renderBookshelf(libs);
+    renderNotesPreview(notes, []);
+    announce('Dashboard updated. ' + libs.length + ' books in library, ' + notes.length + ' notes written.');
   }
 
-  /* Bar chart: resources added — last 7 days */
-  function renderBarChart(recs) {
+  /* Bar chart: notes written — last 7 days */
+  function renderBarChart(notes) {
     var chartEl = el('bar-chart');
     if (!chartEl) return;
 
@@ -195,7 +195,7 @@
       var key = d.toISOString().slice(0, 10);
       days.push({
         label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        count: recs.filter(function (r) { return r.dateAdded === key; }).length
+        count: notes.filter(function (n) { return (n.createdAt || '').slice(0, 10) === key; }).length
       });
     }
 
@@ -211,32 +211,42 @@
     }).join('');
   }
 
-  /* Bookshelf */
-  function renderBookshelf(recs) {
+  /* Bookshelf — shows library books the student has interacted with */
+  function renderBookshelf(libs) {
     var shelfEl = el('bookshelf');
     var emptyEl = el('shelf-empty');
     if (!shelfEl) return;
 
-    if (recs.length === 0) {
+    var progs    = storage.getUserProgress(userId);
+    var notedIds = {};
+    myNotes().forEach(function (n) { if (n.bookId) notedIds[n.bookId] = true; });
+
+    var activeBooks = libs.filter(function (book) {
+      return notedIds[book.id] || progs.some(function (p) { return p.bookId === book.id; });
+    });
+
+    if (activeBooks.length === 0) {
       shelfEl.innerHTML = '';
       if (emptyEl) emptyEl.hidden = false;
       return;
     }
     if (emptyEl) emptyEl.hidden = true;
 
-    shelfEl.innerHTML = recs.slice(0, 24).map(function (r) {
-      return '<button class="book-spine book-spine--' + escHtml(r.status) + '"' +
+    shelfEl.innerHTML = activeBooks.slice(0, 24).map(function (r) {
+      var prog   = progs.find(function (p) { return p.bookId === r.id; });
+      var status = prog ? (prog.completed ? 'finished' : 'reading') : 'want';
+      return '<button class="book-spine book-spine--' + escHtml(status) + '"' +
         ' data-id="' + escHtml(r.id) + '"' +
         ' title="' + escHtml(r.title) + '"' +
-        ' aria-label="' + escHtml(r.title) + ' (' + escHtml(STATUS_LABEL[r.status] || r.status) + ')">' +
+        ' aria-label="' + escHtml(r.title) + ' (' + escHtml(STATUS_LABEL[status] || status) + ')">' +
         '<span class="book-spine__title">' + escHtml(r.title) + '</span>' +
       '</button>';
     }).join('');
 
     shelfEl.querySelectorAll('.book-spine').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var rec = myRecords().find(function (r) { return r.id === btn.dataset.id; });
-        if (rec) openViewModal(rec);
+        var book = libs.find(function (r) { return r.id === btn.dataset.id; });
+        if (book) openViewModal(book);
       });
     });
   }
@@ -579,7 +589,7 @@
   var libQuery = '', libStatus = '', libTag = '', libSort = 'dateAdded-desc', libCase = false;
 
   function refreshLibrary() {
-    populateTagFilter('filter-tag', myRecords());
+    populateTagFilter('filter-tag', facBooks());
     renderLibraryTable();
   }
 
@@ -599,7 +609,7 @@
   }
 
   function renderLibraryTable() {
-    var recs   = myRecords();
+    var recs   = facBooks();
     var result = search.filterAndSort(recs, {
       query: libQuery, caseInsensitive: !libCase,
       status: libStatus, tag: libTag, sortBy: libSort
@@ -615,61 +625,49 @@
         hintEl.textContent = 'Regex error'; hintEl.style.color = 'var(--red)';
       } else if (libQuery && result.re) {
         hintEl.textContent = result.filtered.length + ' match' + (result.filtered.length !== 1 ? 'es' : '');
-        hintEl.style.color = 'var(--green)';
+        hintEl.style.color = 'var(--primary-light)';
       } else { hintEl.textContent = ''; }
     }
 
-    if (countEl) countEl.textContent = result.filtered.length + ' of ' + recs.length + ' resources';
+    if (countEl) countEl.textContent = result.filtered.length + ' of ' + recs.length + ' books';
     if (emptyEl) emptyEl.hidden = result.filtered.length > 0;
     if (!tbody)  return;
+
+    var progs = storage.getUserProgress(userId);
 
     tbody.innerHTML = result.filtered.map(function (r) {
       var titleHtml  = validators.highlight(r.title,  result.re);
       var authorHtml = validators.highlight(r.author, result.re);
       var tagHtml    = validators.highlight(r.tag,    result.re);
-      var approvalBadge = r.approved
-        ? '<span class="approval-badge approval-badge--approved">Approved</span>'
-        : r.rejectedReason
-          ? '<span class="approval-badge approval-badge--rejected" title="' + escHtml(r.rejectedReason) + '">Rejected</span>'
-          : '<span class="approval-badge approval-badge--pending">Pending</span>';
+      var prog       = progs.find(function (p) { return p.bookId === r.id; });
+      var status     = prog ? (prog.completed ? 'finished' : 'reading') : 'want';
 
       return '<tr data-id="' + escHtml(r.id) + '">' +
-        '<td class="col-spine"><div class="spine-dot spine-dot--' + escHtml(r.status) + '"></div></td>' +
+        '<td class="col-spine"><div class="spine-dot spine-dot--' + escHtml(status) + '"></div></td>' +
         '<td class="col-title">' + titleHtml +
-          (r.recommended ? ' <span title="Recommended" aria-label="Recommended" style="color:#ca8a04">★</span>' : '') +
+          (r.recommended ? ' <span title="Recommended" aria-label="Recommended" style="color:var(--accent)">★</span>' : '') +
         '</td>' +
         '<td class="col-author">' + authorHtml + '</td>' +
-        '<td class="col-pages">' + escHtml(r.pages) + '</td>' +
+        '<td class="col-pages">' + escHtml(String(r.pages || '')) + '</td>' +
         '<td class="col-tag">' + tagHtml + '</td>' +
-        '<td class="col-status"><span class="status-badge status-badge--' + escHtml(r.status) + '">' +
-          escHtml(STATUS_LABEL[r.status] || r.status) + '</span></td>' +
+        '<td class="col-status"><span class="status-badge status-badge--' + escHtml(status) + '">' +
+          escHtml(STATUS_LABEL[status] || status) + '</span></td>' +
         '<td class="col-date">' + escHtml(r.dateAdded) + '</td>' +
-        '<td class="col-approval">' + approvalBadge + '</td>' +
         '<td class="col-actions">' +
-          '<button class="btn btn--xs btn--ghost action-view"   data-id="' + escHtml(r.id) + '" aria-label="View ' + escHtml(r.title) + '">View</button>' +
-          '<button class="btn btn--xs btn--ghost action-edit"   data-id="' + escHtml(r.id) + '" aria-label="Edit ' + escHtml(r.title) + '"' + (r.approved ? ' disabled title="Approved books cannot be edited"' : '') + '>Edit</button>' +
-          '<button class="btn btn--xs btn--ghost action-delete" data-id="' + escHtml(r.id) + '" aria-label="Delete ' + escHtml(r.title) + '" style="color:var(--red)">Del</button>' +
+          '<button class="btn btn--xs btn--ghost action-view" data-id="' + escHtml(r.id) + '" aria-label="View ' + escHtml(r.title) + '">View</button>' +
+          '<button class="btn btn--xs btn--accent action-note" data-id="' + escHtml(r.id) + '" aria-label="Note for ' + escHtml(r.title) + '">Note</button>' +
         '</td>' +
       '</tr>';
     }).join('');
 
     tbody.querySelectorAll('.action-view').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var rec = myRecords().find(function (r) { return r.id === btn.dataset.id; });
+        var rec = facBooks().find(function (r) { return r.id === btn.dataset.id; });
         if (rec) openViewModal(rec);
       });
     });
-    tbody.querySelectorAll('.action-edit').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var rec = myRecords().find(function (r) { return r.id === btn.dataset.id; });
-        if (rec) openEditModal(rec);
-      });
-    });
-    tbody.querySelectorAll('.action-delete').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var rec = myRecords().find(function (r) { return r.id === btn.dataset.id; });
-        if (rec) confirmDeleteRecord(rec);
-      });
+    tbody.querySelectorAll('.action-note').forEach(function (btn) {
+      btn.addEventListener('click', function () { openNoteModal(null, btn.dataset.id); });
     });
   }
 
@@ -704,45 +702,29 @@
     });
   }
 
-  /* Export / Import */
+  /* Export library as JSON */
   var exportBtn = el('export-btn');
   if (exportBtn) {
     exportBtn.addEventListener('click', function () {
-      var recs = myRecords();
-      var blob = new Blob([JSON.stringify(recs, null, 2)], { type: 'application/json' });
+      var libs = facBooks();
+      var notes = myNotes();
+      var exportData = {
+        library: libs.map(function (r) {
+          return { id: r.id, title: r.title, author: r.author, pages: r.pages, tag: r.tag, description: r.description || '' };
+        }),
+        myNotes: notes.map(function (n) {
+          var book = libs.find(function (r) { return r.id === n.bookId; });
+          return { id: n.id, content: n.content, bookId: n.bookId, bookTitle: book ? book.title : '', createdAt: n.createdAt, updatedAt: n.updatedAt };
+        })
+      };
+      var blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
       var url  = URL.createObjectURL(blob);
       var a    = document.createElement('a');
-      a.href = url;
-      a.download = 'my-library-' + new Date().toISOString().slice(0, 10) + '.json';
+      a.href     = url;
+      a.download = 'alusource-library-' + new Date().toISOString().slice(0, 10) + '.json';
       a.click();
       URL.revokeObjectURL(url);
-      toast('Exported ' + recs.length + ' records.');
-    });
-  }
-
-  var importFile = el('import-file');
-  if (importFile) {
-    importFile.addEventListener('change', function () {
-      var file = importFile.files[0];
-      if (!file) return;
-      var reader = new FileReader();
-      reader.onload = function (e) {
-        var data;
-        try { data = JSON.parse(e.target.result); } catch (_) { toast('Invalid JSON file.', 'error'); return; }
-        if (!storage.validateImport(data)) { toast('Import failed: invalid record format.', 'error'); return; }
-        var recs     = storage.loadRecords();
-        var existing = {};
-        recs.forEach(function (r) { existing[r.id] = true; });
-        var added = 0;
-        data.forEach(function (r) {
-          if (!existing[r.id]) { r.userId = userId; recs.push(r); added++; }
-        });
-        storage.saveRecords(recs);
-        toast('Imported ' + added + ' new records.');
-        renderLibraryTable();
-        importFile.value = '';
-      };
-      reader.readAsText(file);
+      toast('Exported library (' + libs.length + ' books, ' + notes.length + ' notes).');
     });
   }
 
@@ -752,30 +734,14 @@
   function refreshNotes() {
     var bookSel = el('notes-filter-book');
     if (bookSel) {
-      var curr = bookSel.value;
-      while (bookSel.options.length > 1) bookSel.remove(1);
-      var myRecs   = myRecords();
+      var curr     = bookSel.value;
       var libBooks = facBooks();
-      if (myRecs.length) {
-        var grpMy = document.createElement('optgroup');
-        grpMy.label = 'My Tracked Books';
-        myRecs.forEach(function (r) {
-          var opt = document.createElement('option');
-          opt.value = r.id; opt.textContent = r.title.slice(0, 45);
-          grpMy.appendChild(opt);
-        });
-        bookSel.appendChild(grpMy);
-      }
-      if (libBooks.length) {
-        var grpLib = document.createElement('optgroup');
-        grpLib.label = 'Library Books';
-        libBooks.forEach(function (r) {
-          var opt = document.createElement('option');
-          opt.value = r.id; opt.textContent = r.title.slice(0, 45);
-          grpLib.appendChild(opt);
-        });
-        bookSel.appendChild(grpLib);
-      }
+      while (bookSel.options.length > 1) bookSel.remove(1);
+      libBooks.forEach(function (r) {
+        var opt = document.createElement('option');
+        opt.value = r.id; opt.textContent = r.title.slice(0, 45);
+        bookSel.appendChild(opt);
+      });
       bookSel.value = curr;
     }
     renderNotesList();
@@ -839,103 +805,6 @@
   var addNoteBtn = el('add-note-btn');
   if (addNoteBtn) addNoteBtn.addEventListener('click', function () { openNoteModal(null); });
 
-  /* ── Add Resource form ───────────────────────────────────────── */
-  var ADD_VALIDATORS = {
-    'f-title':  function (v) { return validators.validateTitle(v); },
-    'f-author': function (v) { return validators.validateAuthorFormat(v); },
-    'f-pages':  function (v) { return validators.validatePages(v); },
-    'f-date':   function (v) { return validators.validateDate(v); },
-    'f-tag':    function (v) { return validators.validateTag(v); },
-    'f-status': function (v) { return v ? '' : 'Please select a status.'; },
-    'f-notes':  function (v) { return validators.validateNotes(v); },
-  };
-
-  function validateField(id, val) {
-    var fn  = ADD_VALIDATORS[id];
-    var err = fn ? fn(val) : '';
-    var errEl = el(id + '-err');
-    if (errEl) errEl.textContent = err;
-    var inp = el(id);
-    if (inp) inp.setAttribute('aria-invalid', err ? 'true' : 'false');
-    return !err;
-  }
-
-  function resetAddForm() {
-    var form = el('resource-form');
-    if (form) form.reset();
-    Object.keys(ADD_VALIDATORS).forEach(function (id) {
-      var errEl = el(id + '-err');
-      if (errEl) errEl.textContent = '';
-      var inp = el(id);
-      if (inp) inp.removeAttribute('aria-invalid');
-    });
-    var dateEl = el('f-date');
-    if (dateEl) dateEl.value = new Date().toISOString().slice(0, 10);
-  }
-
-  /* Blur validation */
-  Object.keys(ADD_VALIDATORS).forEach(function (id) {
-    var inp = el(id);
-    if (inp) inp.addEventListener('blur', function () { validateField(id, inp.value); });
-  });
-
-  var resourceForm = el('resource-form');
-  if (resourceForm) {
-    resourceForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var valid = true;
-      Object.keys(ADD_VALIDATORS).forEach(function (id) {
-        var inp = el(id);
-        if (!validateField(id, inp ? inp.value : '')) valid = false;
-      });
-      if (!valid) { announce('Please fix validation errors before saving.', true); return; }
-
-      var now = new Date().toISOString();
-      var rec = {
-        id:          'rec_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 5),
-        userId:      userId,
-        title:       el('f-title').value.trim(),
-        author:      el('f-author').value.trim(),
-        pages:       parseInt(el('f-pages').value, 10),
-        dateAdded:   el('f-date').value.trim(),
-        tag:         el('f-tag').value.trim(),
-        status:      el('f-status').value,
-        notes:       el('f-notes').value.trim(),
-        recommended: false,
-        approved:    false,
-        isbn:        '',
-        createdAt:   now,
-        updatedAt:   now,
-      };
-
-      var recs = storage.loadRecords();
-      recs.push(rec);
-      storage.saveRecords(recs);
-
-      toast('"' + rec.title + '" submitted — pending facilitator approval.');
-      announce('Resource ' + rec.title + ' submitted. Awaiting facilitator approval.');
-      resetAddForm();
-      navigateTo('library');
-    });
-  }
-
-  /* Page converter */
-  var convInput   = el('conv-input');
-  var convResults = el('conversion-results');
-  if (convInput && convResults) {
-    convInput.addEventListener('input', function () {
-      var pages = parseFloat(convInput.value);
-      if (!pages || pages <= 0) { convResults.innerHTML = ''; return; }
-      var s   = storage.loadUserSettings(userId);
-      var ppm = s.ppm || 1.5;
-      var mins = Math.round(pages / ppm);
-      var hrs  = Math.floor(mins / 60);
-      var rem  = mins % 60;
-      convResults.innerHTML =
-        '<div class="conv-result"><span class="conv-val">' + (hrs > 0 ? hrs + 'h ' : '') + rem + 'm</span><span class="conv-label">at ' + ppm + ' pages/min</span></div>' +
-        '<div class="conv-result"><span class="conv-val">' + Math.round(pages * 250) + '</span><span class="conv-label">estimated words</span></div>';
-    });
-  }
 
   /* ── Profile page ────────────────────────────────────────────── */
   function loadProfile() {
@@ -1018,7 +887,7 @@
       var s = storage.loadUserSettings(userId);
       s.goal = goal;
       storage.saveUserSettings(userId, s);
-      updateCapBar(myRecords());
+      updateCapBar();
       toast('Reading goal saved: ' + goal + ' resources.');
     });
   }
@@ -1082,8 +951,25 @@
       if (notesSec) notesSec.hidden = true;
     }
 
-    var editBtn = el('view-edit-btn');
-    if (editBtn) editBtn.onclick = function () { closeViewModal(); openEditModal(rec); };
+    /* Show student's own notes for this book */
+    var myNotesSec  = el('view-my-notes');
+    var myNotesListEl = el('view-my-notes-list');
+    var myBookNotes = myNotes().filter(function (n) { return n.bookId === rec.id; });
+    if (myNotesSec) {
+      if (myBookNotes.length > 0) {
+        myNotesSec.hidden = false;
+        if (myNotesListEl) {
+          myNotesListEl.innerHTML = myBookNotes.map(function (n) {
+            return '<p style="margin:.4rem 0;padding:.5rem .75rem;background:var(--bg-offset);border-radius:var(--radius);font-size:.85rem">' + escHtml(n.content) + '</p>';
+          }).join('');
+        }
+      } else {
+        myNotesSec.hidden = true;
+      }
+    }
+
+    var noteBtn = el('view-edit-btn');
+    if (noteBtn) noteBtn.onclick = function () { closeViewModal(); openNoteModal(null, rec.id); };
 
     viewModal.hidden = false;
     el('view-modal-close').focus();
@@ -1171,41 +1057,25 @@
       toast('Record updated.');
       announce('Record updated: ' + recs[idx].title);
       renderLibraryTable();
-      updateCapBar(myRecords());
+      updateCapBar();
     });
   }
 
   /* ── Note Modal ──────────────────────────────────────────────── */
   var noteModal = el('note-modal');
 
-  function openNoteModal(note) {
+  function openNoteModal(note, preBookId) {
     if (!noteModal) return;
-    var recs     = myRecords();
     var libBooks = facBooks();
     var bookSel  = el('nm-book');
     if (bookSel) {
       while (bookSel.options.length > 1) bookSel.remove(1);
-      if (libBooks.length) {
-        var grpLib = document.createElement('optgroup');
-        grpLib.label = 'Library Books';
-        libBooks.forEach(function (r) {
-          var opt = document.createElement('option');
-          opt.value = r.id; opt.textContent = r.title.slice(0, 50);
-          grpLib.appendChild(opt);
-        });
-        bookSel.appendChild(grpLib);
-      }
-      if (recs.length) {
-        var grpMy = document.createElement('optgroup');
-        grpMy.label = 'My Tracked Books';
-        recs.forEach(function (r) {
-          var opt = document.createElement('option');
-          opt.value = r.id; opt.textContent = r.title.slice(0, 50);
-          grpMy.appendChild(opt);
-        });
-        bookSel.appendChild(grpMy);
-      }
-      bookSel.value = note && note.bookId ? note.bookId : '';
+      libBooks.forEach(function (r) {
+        var opt = document.createElement('option');
+        opt.value = r.id; opt.textContent = r.title.slice(0, 50);
+        bookSel.appendChild(opt);
+      });
+      bookSel.value = preBookId || (note && note.bookId ? note.bookId : '');
     }
     el('nm-id').value      = note ? note.id      : '';
     el('nm-content').value = note ? note.content : '';
@@ -1294,7 +1164,7 @@
       storage.saveRecords(recs);
       toast('"' + rec.title + '" deleted.');
       renderLibraryTable();
-      updateCapBar(myRecords());
+      updateCapBar();
     });
   }
 

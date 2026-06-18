@@ -87,10 +87,6 @@
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/></svg>
         <span>My Notes</span>
       </a></li>
-      <li><a href="#" class="nav-link" data-page="add">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
-        <span>Track a Book</span>
-      </a></li>
       <li><a href="#" class="nav-link" data-page="profile">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
         <span>Profile</span>
@@ -133,26 +129,28 @@
         <p class="page-subtitle">Your personal reading at a glance</p>
       </header>
       <div class="stats-grid">
-        <div class="stat-card stat-card--total"><div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg></div><div class="stat-card__body"><span class="stat-card__value" id="stat-total">0</span><span class="stat-card__label">Total Resources</span></div></div>
-        <div class="stat-card stat-card--want"><div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg></div><div class="stat-card__body"><span class="stat-card__value" id="stat-want">0</span><span class="stat-card__label">Want to Read</span></div></div>
-        <div class="stat-card stat-card--reading"><div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div><div class="stat-card__body"><span class="stat-card__value" id="stat-reading">0</span><span class="stat-card__label">Currently Reading</span></div></div>
-        <div class="stat-card stat-card--done"><div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg></div><div class="stat-card__body"><span class="stat-card__value" id="stat-done">0</span><span class="stat-card__label">Finished</span></div></div>
-        <div class="stat-card stat-card--pages"><div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg></div><div class="stat-card__body"><span class="stat-card__value" id="stat-pages">0</span><span class="stat-card__label">Pages Read</span></div></div>
-        <div class="stat-card stat-card--tag"><div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg></div><div class="stat-card__body"><span class="stat-card__value stat-card__value--sm" id="stat-top-tag">—</span><span class="stat-card__label">Top Tag</span></div></div>
+        <div class="stat-card stat-card--total"><div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><div class="stat-card__body"><span class="stat-card__value" id="stat-total">0</span><span class="stat-card__label">Library Books</span></div></div>
+        <div class="stat-card stat-card--want"><div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/></svg></div><div class="stat-card__body"><span class="stat-card__value" id="stat-want">0</span><span class="stat-card__label">Notes Written</span></div></div>
+        <div class="stat-card stat-card--reading"><div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div><div class="stat-card__body"><span class="stat-card__value" id="stat-reading">0</span><span class="stat-card__label">In Progress</span></div></div>
+        <div class="stat-card stat-card--done"><div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg></div><div class="stat-card__body"><span class="stat-card__value" id="stat-done">0</span><span class="stat-card__label">Completed</span></div></div>
+        <div class="stat-card stat-card--pages"><div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg></div><div class="stat-card__body"><span class="stat-card__value" id="stat-pages">0</span><span class="stat-card__label">Pages Covered</span></div></div>
+        <div class="stat-card stat-card--tag"><div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg></div><div class="stat-card__body"><span class="stat-card__value stat-card__value--sm" id="stat-top-tag">—</span><span class="stat-card__label">Top Topic</span></div></div>
       </div>
       <div class="cap-message" id="cap-message" aria-live="polite" hidden></div>
-      <section class="chart-section" aria-labelledby="chart-heading"><h2 id="chart-heading">Resources Added — Last 7 Days</h2><div class="bar-chart" id="bar-chart" role="img" aria-label="Bar chart showing resources added in last 7 days"></div></section>
-      <section class="shelf-section" aria-labelledby="shelf-heading"><h2 id="shelf-heading">Your Bookshelf <span class="shelf-hint">Click a spine to view</span></h2><div class="bookshelf" id="bookshelf" aria-label="Visual bookshelf"><p class="empty-state" id="shelf-empty">No resources yet. <a href="#" data-page="add">Track your first one</a></p></div></section>
+      <section class="chart-section" aria-labelledby="chart-heading"><h2 id="chart-heading">Notes Written — Last 7 Days</h2><div class="bar-chart" id="bar-chart" role="img" aria-label="Bar chart showing resources added in last 7 days"></div></section>
+      <section class="shelf-section" aria-labelledby="shelf-heading"><h2 id="shelf-heading">Your Bookshelf <span class="shelf-hint">Click a spine to view</span></h2><div class="bookshelf" id="bookshelf" aria-label="Visual bookshelf"><p class="empty-state" id="shelf-empty">Browse the library and start taking notes. <a href="#" data-page="books">View all books →</a></p></div></section>
       <section class="notes-preview-section" aria-labelledby="notes-prev-heading"><h2 id="notes-prev-heading">Recent Notes</h2><div id="notes-preview-list"></div><a href="#" data-page="notes" class="btn btn--ghost btn--sm" style="margin-top:.75rem">View all notes →</a></section>
     </section>
 
     <!-- LIBRARY -->
     <section id="page-library" class="page" aria-labelledby="library-heading">
       <header class="page-header">
-        <h1 id="library-heading">My Library</h1>
+        <div>
+          <h1 id="library-heading">Library</h1>
+          <p class="page-subtitle">Browse all facilitator-curated books</p>
+        </div>
         <div class="page-header__actions">
-          <button class="btn btn--sm btn--outline" id="export-btn">Export JSON</button>
-          <label class="btn btn--sm btn--outline" for="import-file">Import JSON<input type="file" id="import-file" accept=".json" class="sr-only" /></label>
+          <button class="btn btn--sm btn--outline" id="export-btn">Export Library</button>
         </div>
       </header>
       <div class="library-controls">
@@ -166,7 +164,7 @@
       </div>
       <p class="records-count" id="records-count" aria-live="polite">Loading…</p>
       <div class="table-wrap" role="region" aria-label="Library records" tabindex="0">
-        <table class="records-table" id="records-table"><thead><tr><th scope="col" class="col-spine" aria-label="Status indicator"></th><th scope="col" class="col-title">Title</th><th scope="col" class="col-author">Author</th><th scope="col" class="col-pages">Pages</th><th scope="col" class="col-tag">Tag</th><th scope="col" class="col-status">Status</th><th scope="col" class="col-date">Added</th><th scope="col" class="col-approval">Approval</th><th scope="col" class="col-actions">Actions</th></tr></thead><tbody id="records-body"></tbody></table>
+        <table class="records-table" id="records-table"><thead><tr><th scope="col" class="col-spine" aria-label="Status indicator"></th><th scope="col" class="col-title">Title</th><th scope="col" class="col-author">Author</th><th scope="col" class="col-pages">Pages</th><th scope="col" class="col-tag">Tag</th><th scope="col" class="col-status">Status</th><th scope="col" class="col-date">Added</th><th scope="col" class="col-actions">Actions</th></tr></thead><tbody id="records-body"></tbody></table>
         <p class="empty-state" id="table-empty" hidden>No resources match your search.</p>
       </div>
     </section>
@@ -186,25 +184,6 @@
       <div id="notes-list" class="notes-list" aria-live="polite" aria-label="Notes list"></div>
     </section>
 
-    <!-- TRACK A BOOK -->
-    <section id="page-add" class="page" aria-labelledby="add-heading">
-      <header class="page-header"><h1 id="add-heading">Track a Book</h1><p class="page-subtitle">Add a book to your personal reading list</p></header>
-      <form class="resource-form" id="resource-form" novalidate aria-label="Add resource">
-        <div class="form-group"><label for="f-title" class="form-label">Title <span class="required" aria-hidden="true">*</span></label><input type="text" id="f-title" class="form-input" required aria-required="true" aria-describedby="f-title-err" /><span class="form-error" id="f-title-err" role="alert"></span></div>
-        <div class="form-group"><label for="f-author" class="form-label">Author <span class="required" aria-hidden="true">*</span></label><input type="text" id="f-author" class="form-input" required aria-required="true" aria-describedby="f-author-err f-author-hint" placeholder="e.g. Ries, Eric" /><span class="form-hint" id="f-author-hint">Surname, Given format recommended.</span><span class="form-error" id="f-author-err" role="alert"></span></div>
-        <div class="form-row">
-          <div class="form-group"><label for="f-pages" class="form-label">Pages <span class="required" aria-hidden="true">*</span></label><input type="text" id="f-pages" class="form-input" required aria-required="true" aria-describedby="f-pages-err" inputmode="numeric" /><span class="form-error" id="f-pages-err" role="alert"></span></div>
-          <div class="form-group"><label for="f-date" class="form-label">Date Added <span class="required" aria-hidden="true">*</span></label><input type="text" id="f-date" class="form-input" required aria-required="true" aria-describedby="f-date-err" placeholder="YYYY-MM-DD" /><span class="form-error" id="f-date-err" role="alert"></span></div>
-        </div>
-        <div class="form-row">
-          <div class="form-group"><label for="f-tag" class="form-label">Tag <span class="required" aria-hidden="true">*</span></label><input type="text" id="f-tag" class="form-input" required aria-required="true" aria-describedby="f-tag-err" /><span class="form-error" id="f-tag-err" role="alert"></span></div>
-          <div class="form-group"><label for="f-status" class="form-label">Status <span class="required" aria-hidden="true">*</span></label><select id="f-status" class="form-input form-select" required aria-required="true" aria-describedby="f-status-err"><option value="">Select…</option><option value="want">Want to Read</option><option value="reading">Currently Reading</option><option value="finished">Finished</option></select><span class="form-error" id="f-status-err" role="alert"></span></div>
-        </div>
-        <div class="form-group"><label for="f-notes" class="form-label">Notes <span class="optional">(optional)</span></label><textarea id="f-notes" class="form-input form-textarea" rows="3" aria-describedby="f-notes-hint f-notes-err" placeholder="Key takeaways, quotes…"></textarea><span class="form-hint" id="f-notes-hint">Duplicate-word detection active.</span><span class="form-error" id="f-notes-err" role="alert"></span></div>
-        <div class="form-actions"><button type="submit" class="btn btn--primary" id="submit-btn">Save Resource</button></div>
-      </form>
-      <aside class="converter-card" aria-labelledby="conv-heading"><h2 id="conv-heading" class="converter-card__title">Page Converter</h2><div class="converter-body"><label for="conv-input" class="form-label">Enter page count</label><input type="number" id="conv-input" class="form-input converter-input" min="0" placeholder="e.g. 320" /><div class="conversion-results" id="conversion-results" aria-live="polite"></div></div></aside>
-    </section>
 
     <!-- PROFILE -->
     <section id="page-profile" class="page" aria-labelledby="profile-heading">
@@ -308,7 +287,7 @@
 
   <!-- VIEW MODAL -->
   <div class="modal-overlay" id="view-modal" role="dialog" aria-modal="true" aria-labelledby="view-modal-title" hidden>
-    <div class="modal modal--view"><button class="modal__close" id="view-modal-close" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button><div class="view-modal__spine" id="view-spine" aria-hidden="true"></div><div class="view-modal__body"><div class="view-modal__status" id="view-status"></div><h2 class="view-modal__title" id="view-modal-title"></h2><p class="view-modal__author" id="view-author"></p><div class="view-modal__meta"><span class="view-meta-item" id="view-pages"></span><span class="view-meta-item" id="view-tag"></span><span class="view-meta-item" id="view-date"></span></div><div class="view-modal__notes" id="view-notes" hidden><h3>Notes</h3><p id="view-notes-text"></p></div></div><div class="modal__actions"><button class="btn btn--primary" id="view-edit-btn">Edit</button><button class="btn btn--ghost" id="view-close-btn">Close</button></div></div>
+    <div class="modal modal--view"><button class="modal__close" id="view-modal-close" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button><div class="view-modal__spine" id="view-spine" aria-hidden="true"></div><div class="view-modal__body"><div class="view-modal__status" id="view-status"></div><h2 class="view-modal__title" id="view-modal-title"></h2><p class="view-modal__author" id="view-author"></p><div class="view-modal__meta"><span class="view-meta-item" id="view-pages"></span><span class="view-meta-item" id="view-tag"></span><span class="view-meta-item" id="view-date"></span></div><div class="view-modal__notes" id="view-notes" hidden><h3>Facilitator Notes</h3><p id="view-notes-text"></p></div><div class="view-modal__notes" id="view-my-notes" hidden><h3>My Notes</h3><div id="view-my-notes-list"></div></div></div><div class="modal__actions"><button class="btn btn--primary" id="view-edit-btn">Add Note</button><button class="btn btn--ghost" id="view-close-btn">Close</button></div></div>
   </div>
 
   <!-- EDIT MODAL -->
