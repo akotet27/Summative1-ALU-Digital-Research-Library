@@ -250,8 +250,10 @@
       return;
     }
 
+    var libBooks = facBooks();
     listEl.innerHTML = notes.slice(0, 3).map(function (n) {
-      var book = recs.find(function (r) { return r.id === n.bookId; });
+      var book = recs.find(function (r) { return r.id === n.bookId; })
+               || libBooks.find(function (r) { return r.id === n.bookId; });
       return '<div class="note-preview">' +
         '<p class="note-preview__content">' +
           escHtml((n.content || '').slice(0, 120)) + ((n.content || '').length > 120 ? '…' : '') +
@@ -263,11 +265,18 @@
 
   /* ── Browse Books page ──────────────────────────────────────── */
   var TAG_COLORS_DB = {
-    'Leadership':      '#1B4D3E', 'Entrepreneurship': '#2D6A4F',
-    'Technology':      '#0F3460', 'Innovation':       '#1A535C',
-    'Finance':         '#7B2D8B', 'Design':           '#C05621',
-    'Communication':   '#2C5282', 'Strategy':         '#744210',
-    'Ethics':          '#22543D', 'Research':         '#1A365D'
+    /* BEL */
+    'Entrepreneurship': '#0F2A5C', 'Leadership': '#1E3A6E',
+    'Innovation': '#1a3d7c', 'Design Thinking': '#6B1A2A',
+    'Social Entrepreneurship': '#1A3D6B',
+    /* BSE */
+    'Software Development': '#0F2A5C', 'AI & Machine Learning': '#0D1A6B',
+    'Data Science': '#0D3D6B', 'Computing': '#1A2A5A',
+    /* IBT */
+    'International Business': '#3D1A0A', 'Global Development': '#1A1A3D',
+    'Behavioral Economics': '#2A1A3D', 'Sustainability': '#0D3D2A',
+    /* General */
+    'Finance': '#1A1A4D', 'Communication': '#1A3A5A', 'Ethics': '#2D1B69'
   };
 
   var booksListMode = false;
@@ -326,7 +335,7 @@
     gridEl.innerHTML = filtered.map(function (book) {
       var prog    = allProgress.find(function (p) { return p.userId === userId && p.bookId === book.id; });
       var pct     = prog ? Math.min(100, Math.round(prog.percent || 0)) : 0;
-      var bgColor = book.coverColor || TAG_COLORS_DB[book.tag] || '#1B4D3E';
+      var bgColor = book.coverColor || TAG_COLORS_DB[book.tag] || '#0F2A5C';
       var coverStyle = book.coverUrl
         ? 'background-image:url(' + escHtml(book.coverUrl) + ');background-size:cover;background-position:center'
         : 'background-color:' + bgColor;
@@ -744,11 +753,28 @@
     if (bookSel) {
       var curr = bookSel.value;
       while (bookSel.options.length > 1) bookSel.remove(1);
-      myRecords().forEach(function (r) {
-        var opt = document.createElement('option');
-        opt.value = r.id; opt.textContent = r.title.slice(0, 45);
-        bookSel.appendChild(opt);
-      });
+      var myRecs   = myRecords();
+      var libBooks = facBooks();
+      if (myRecs.length) {
+        var grpMy = document.createElement('optgroup');
+        grpMy.label = 'My Tracked Books';
+        myRecs.forEach(function (r) {
+          var opt = document.createElement('option');
+          opt.value = r.id; opt.textContent = r.title.slice(0, 45);
+          grpMy.appendChild(opt);
+        });
+        bookSel.appendChild(grpMy);
+      }
+      if (libBooks.length) {
+        var grpLib = document.createElement('optgroup');
+        grpLib.label = 'Library Books';
+        libBooks.forEach(function (r) {
+          var opt = document.createElement('option');
+          opt.value = r.id; opt.textContent = r.title.slice(0, 45);
+          grpLib.appendChild(opt);
+        });
+        bookSel.appendChild(grpLib);
+      }
       bookSel.value = curr;
     }
     renderNotesList();
@@ -757,6 +783,7 @@
   function renderNotesList() {
     var notes    = myNotes();
     var recs     = myRecords();
+    var libBooks = facBooks();
     var filtered = search.filterNotes(notes, { query: notesQuery, bookId: notesBook || undefined });
     var listEl   = el('notes-list');
     if (!listEl) return;
@@ -772,7 +799,8 @@
     }
 
     listEl.innerHTML = filtered.map(function (n) {
-      var book = recs.find(function (r) { return r.id === n.bookId; });
+      var book = recs.find(function (r) { return r.id === n.bookId; })
+               || libBooks.find(function (r) { return r.id === n.bookId; });
       var date = new Date(n.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       return '<div class="note-card">' +
         '<div class="note-card__header">' +
@@ -1151,15 +1179,31 @@
 
   function openNoteModal(note) {
     if (!noteModal) return;
-    var recs    = myRecords();
-    var bookSel = el('nm-book');
+    var recs     = myRecords();
+    var libBooks = facBooks();
+    var bookSel  = el('nm-book');
     if (bookSel) {
       while (bookSel.options.length > 1) bookSel.remove(1);
-      recs.forEach(function (r) {
-        var opt = document.createElement('option');
-        opt.value = r.id; opt.textContent = r.title.slice(0, 50);
-        bookSel.appendChild(opt);
-      });
+      if (libBooks.length) {
+        var grpLib = document.createElement('optgroup');
+        grpLib.label = 'Library Books';
+        libBooks.forEach(function (r) {
+          var opt = document.createElement('option');
+          opt.value = r.id; opt.textContent = r.title.slice(0, 50);
+          grpLib.appendChild(opt);
+        });
+        bookSel.appendChild(grpLib);
+      }
+      if (recs.length) {
+        var grpMy = document.createElement('optgroup');
+        grpMy.label = 'My Tracked Books';
+        recs.forEach(function (r) {
+          var opt = document.createElement('option');
+          opt.value = r.id; opt.textContent = r.title.slice(0, 50);
+          grpMy.appendChild(opt);
+        });
+        bookSel.appendChild(grpMy);
+      }
       bookSel.value = note && note.bookId ? note.bookId : '';
     }
     el('nm-id').value      = note ? note.id      : '';

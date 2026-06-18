@@ -1,4 +1,4 @@
-/* scripts/storage.js — IIFE Module: all localStorage persistence */
+﻿/* scripts/storage.js — IIFE Module: all localStorage persistence */
 ;(function (App) {
   'use strict';
 
@@ -129,7 +129,7 @@
       dateAdded: '2025-09-10',
       notes: 'Core MVP framework. Build-Measure-Learn is key.',
       recommended: true,
-      coverColor: '#0F4C35',
+      coverColor: '#0F2A5C',
       coverUrl: 'https://covers.openlibrary.org/b/isbn/9780307887894-L.jpg',
       pdfUrl: '',
       approved: true,
@@ -148,7 +148,7 @@
       author: 'Brown, Tim',
       pages: 272,
       status: 'reading',
-      tag: 'Design',
+      tag: 'Design Thinking',
       dateAdded: '2025-10-02',
       notes: 'Chapter 3 most relevant to my problem statement.',
       recommended: false,
@@ -175,7 +175,7 @@
       dateAdded: '2025-11-15',
       notes: '',
       recommended: false,
-      coverColor: '#2D1B69',
+      coverColor: '#1E3A6E',
       coverUrl: 'https://covers.openlibrary.org/b/isbn/9780066620992-L.jpg',
       pdfUrl: '',
       approved: true,
@@ -194,7 +194,7 @@
       author: 'Rosling, Hans',
       pages: 342,
       status: 'finished',
-      tag: 'Data',
+      tag: 'Global Development',
       dateAdded: '2025-09-28',
       notes: 'Changed how I think about presenting data.',
       recommended: true,
@@ -221,7 +221,7 @@
       dateAdded: '2025-10-18',
       notes: 'Disruptive innovation theory for my capstone sector.',
       recommended: true,
-      coverColor: '#0F3D0F',
+      coverColor: '#1a3d7c',
       coverUrl: 'https://covers.openlibrary.org/b/isbn/9780060521998-L.jpg',
       pdfUrl: '',
       approved: true,
@@ -240,11 +240,11 @@
       author: 'Knapp, Jake',
       pages: 288,
       status: 'reading',
-      tag: 'Product',
+      tag: 'Software Development',
       dateAdded: '2025-11-01',
       notes: 'Using 5-day sprint for prototyping.',
       recommended: false,
-      coverColor: '#1A3A1A',
+      coverColor: '#0F2A5C',
       coverUrl: 'https://covers.openlibrary.org/b/isbn/9781501121746-L.jpg',
       pdfUrl: '',
       approved: true,
@@ -267,7 +267,7 @@
       dateAdded: '2025-09-05',
       notes: 'Every capstone student should read this first.',
       recommended: true,
-      coverColor: '#0F4C35',
+      coverColor: '#0F2A5C',
       coverUrl: 'https://covers.openlibrary.org/b/isbn/9780804139281-L.jpg',
       pdfUrl: '',
       approved: true,
@@ -286,7 +286,7 @@
       author: 'Kahneman, Daniel',
       pages: 499,
       status: 'want',
-      tag: 'Psychology',
+      tag: 'Behavioral Economics',
       dateAdded: '2025-11-20',
       notes: '',
       recommended: false,
@@ -313,7 +313,7 @@
       dateAdded: '2025-09-20',
       notes: 'Helped clarify my capstone purpose statement.',
       recommended: false,
-      coverColor: '#2D1B69',
+      coverColor: '#1E3A6E',
       coverUrl: 'https://covers.openlibrary.org/b/isbn/9781591842804-L.jpg',
       pdfUrl: '',
       approved: true,
@@ -332,7 +332,7 @@
       author: "O'Neil, Cathy",
       pages: 272,
       status: 'finished',
-      tag: 'Data',
+      tag: 'Data Science',
       dateAdded: '2025-10-10',
       notes: 'Critical lens on algorithmic bias — AI ethics section.',
       recommended: true,
@@ -359,7 +359,7 @@
       dateAdded: '2025-11-08',
       notes: 'African startup case studies — local context research.',
       recommended: true,
-      coverColor: '#0F4C35',
+      coverColor: '#0F2A5C',
       coverUrl: '',
       pdfUrl: '',
       approved: true,
@@ -378,11 +378,11 @@
       author: 'Lehoczky, Sandor',
       pages: 272,
       status: 'want',
-      tag: 'Research Methods',
+      tag: 'Computing',
       dateAdded: '2025-12-01',
       notes: '',
       recommended: false,
-      coverColor: '#1A1A4A',
+      coverColor: '#0D1A6B',
       coverUrl: '',
       pdfUrl: '',
       approved: true,
@@ -401,7 +401,7 @@
       author: 'Goodfellow, Ian',
       pages: 800,
       status: 'reading',
-      tag: 'AI',
+      tag: 'AI & Machine Learning',
       dateAdded: '2025-09-15',
       notes: 'Dense but essential for ML capstone students.',
       recommended: true,
@@ -424,7 +424,7 @@
       author: 'Domingos, Pedro',
       pages: 352,
       status: 'finished',
-      tag: 'AI',
+      tag: 'AI & Machine Learning',
       dateAdded: '2025-10-01',
       notes: 'Good intuition builder for non-specialists.',
       recommended: false,
@@ -447,11 +447,11 @@
       author: 'Bornstein, David',
       pages: 320,
       status: 'finished',
-      tag: 'Social Impact',
+      tag: 'Social Entrepreneurship',
       dateAdded: '2025-09-20',
       notes: 'Core reference for youth employment ventures.',
       recommended: true,
-      coverColor: '#0A4A2A',
+      coverColor: '#1A3D6B',
       coverUrl: 'https://covers.openlibrary.org/b/isbn/9780195397659-L.jpg',
       pdfUrl: '',
       approved: true,
@@ -474,7 +474,7 @@
       dateAdded: '2025-10-05',
       notes: 'Framework for sustainable boundaries — AgriTech reading.',
       recommended: false,
-      coverColor: '#1A4A0A',
+      coverColor: '#0D3D2A',
       coverUrl: 'https://covers.openlibrary.org/b/isbn/9781603587440-L.jpg',
       pdfUrl: '',
       approved: true,
@@ -644,6 +644,16 @@
             r.addedByFacilitator = true; changed = true;
           }
         });
+        /* Tag migration: update old generic tags to program-specific ones */
+        var tagMap = {
+          'Design': 'Design Thinking', 'Data': 'Global Development',
+          'Product': 'Software Development', 'Psychology': 'Behavioral Economics',
+          'Social Impact': 'Social Entrepreneurship', 'Research Methods': 'Computing',
+          'AI': 'AI & Machine Learning'
+        };
+        recs.forEach(function (r) {
+          if (tagMap[r.tag]) { r.tag = tagMap[r.tag]; changed = true; }
+        });
         if (changed) this.saveRecords(recs);
       }
       /* Migration: update user classes to new BSE/BEL/IBT codes */
@@ -658,3 +668,4 @@
   };
 
 })(window.App = window.App || {});
+

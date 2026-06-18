@@ -1,7 +1,7 @@
-/* sw.js — Service Worker: offline-first caching for Ethiolab */
+/* sw.js — Service Worker: offline-first caching for ALUSOURCE */
 'use strict';
 
-var CACHE = 'ethiolab-v1';
+var CACHE = 'alusource-v1';
 
 var STATIC_ASSETS = [
   './',

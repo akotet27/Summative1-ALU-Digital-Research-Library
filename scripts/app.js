@@ -69,20 +69,26 @@
 
   /* TAG → cover-color map for books without an explicit coverColor */
   var TAG_COLORS = {
-    'Entrepreneurship': '#0F4C35',
-    'Design':           '#6B1A2A',
-    'Leadership':       '#2D1B69',
-    'Data Science':     '#0D3D6B',
-    'Technology':       '#0F3D0F',
-    'Methodology':      '#1A3A1A',
-    'Policy':           '#3D1A0A',
-    'Economics':        '#1A1A3D',
-    'Ethics':           '#3D1A3D',
-    'Research':         '#1A3D3D',
+    /* BEL — Entrepreneurial Leadership */
+    'Entrepreneurship':       '#0F2A5C',
+    'Leadership':             '#1E3A6E',
+    'Innovation':             '#1a3d7c',
+    'Design Thinking':        '#6B1A2A',
+    'Social Entrepreneurship':'#1A3D6B',
+    /* BSE — Software Engineering */
+    'Software Development':   '#0F2A5C',
+    'AI & Machine Learning':  '#0D1A6B',
+    'Data Science':           '#0D3D6B',
+    'Computing':              '#1A2A5A',
+    /* IBT — International Business Trade */
+    'International Business': '#3D1A0A',
+    'Global Development':     '#1A1A3D',
+    'Behavioral Economics':   '#2A1A3D',
+    'Sustainability':         '#0D3D2A',
   };
 
   function coverColor(rec) {
-    return rec.coverColor || TAG_COLORS[rec.tag] || '#1B4D3E';
+    return rec.coverColor || TAG_COLORS[rec.tag] || '#0F2A5C';
   }
 
   /* ── Build card HTML ────────────────────────────────────────── */

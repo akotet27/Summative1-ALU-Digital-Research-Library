@@ -102,11 +102,18 @@
 
   /* ── Upload Book page ───────────────────────────────────────── */
   var TAG_COLORS = {
-    'Leadership':      '#1B4D3E', 'Entrepreneurship': '#2D6A4F',
-    'Technology':      '#0F3460', 'Innovation':       '#1A535C',
-    'Finance':         '#7B2D8B', 'Design':           '#C05621',
-    'Communication':   '#2C5282', 'Strategy':         '#744210',
-    'Ethics':          '#22543D', 'Research':         '#1A365D'
+    /* BEL */
+    'Entrepreneurship': '#0F2A5C', 'Leadership': '#1E3A6E',
+    'Innovation': '#1a3d7c', 'Design Thinking': '#6B1A2A',
+    'Social Entrepreneurship': '#1A3D6B',
+    /* BSE */
+    'Software Development': '#0F2A5C', 'AI & Machine Learning': '#0D1A6B',
+    'Data Science': '#0D3D6B', 'Computing': '#1A2A5A',
+    /* IBT */
+    'International Business': '#3D1A0A', 'Global Development': '#1A1A3D',
+    'Behavioral Economics': '#2A1A3D', 'Sustainability': '#0D3D2A',
+    /* General */
+    'Finance': '#1A1A4D', 'Communication': '#1A3A5A', 'Ethics': '#2D1B69'
   };
 
   function randomColor() {
@@ -216,8 +223,9 @@
 
   /* ── Overview page ───────────────────────────────────────────── */
   function refreshOverview() {
-    var allRecs = storage.loadRecords();
-    var users   = storage.loadUsers();
+    var allRecs  = storage.loadRecords();
+    var allNotes = storage.loadNotes();
+    var users    = storage.loadUsers();
     var students = users.filter(function (u) { return u.role === 'student'; });
 
     var finished = allRecs.filter(function (r) { return r.status === 'finished'; });
@@ -231,6 +239,15 @@
     allRecs.forEach(function (r) { if (r.tag) tagCounts[r.tag] = (tagCounts[r.tag] || 0) + 1; });
     var topTag = Object.keys(tagCounts).sort(function (a, b) { return tagCounts[b] - tagCounts[a]; })[0] || '—';
 
+    /* Notes written by students */
+    var stuIds = students.map(function (s) { return s.id; });
+    var stuNotes = allNotes.filter(function (n) { return stuIds.indexOf(n.userId) !== -1; });
+
+    /* Students who have at least one record currently being read */
+    var activeReaders = students.filter(function (stu) {
+      return allRecs.some(function (r) { return r.userId === stu.id && r.status === 'reading'; });
+    }).length;
+
     function set(id, v) { var e = el(id); if (e) e.textContent = v; }
     set('fac-stat-total',    allRecs.length);
     set('fac-stat-done',     finished.length);
@@ -238,9 +255,11 @@
     set('fac-stat-rec',      rec.length);
     set('fac-stat-students', students.length);
     set('fac-stat-top-tag',  topTag);
+    set('fac-stat-notes',    stuNotes.length);
+    set('fac-stat-active',   activeReaders);
 
     var subtitle = el('fac-subtitle');
-    if (subtitle) subtitle.textContent = students.length + ' students · ' + allRecs.length + ' resources tracked';
+    if (subtitle) subtitle.textContent = students.length + ' students · ' + allRecs.length + ' resources tracked · ' + stuNotes.length + ' notes';
 
     renderTagChart(allRecs);
     renderHealthGrid(allRecs, students);
