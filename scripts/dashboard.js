@@ -72,11 +72,15 @@
 
   /* Populate nav user info */
   (function () {
-    var user = auth.getUserById(userId) || {};
-    var name = user.name || session.name;
-    el('nav-name').textContent    = name;
-    el('nav-class').textContent   = user.class || session.class || '';
-    el('nav-avatar').textContent  = auth.initials(name);
+    var user  = auth.getUserById(userId) || {};
+    var name  = user.name || session.name || '';
+    var klass = user.class || session.class || '';
+    var nameEl   = el('nav-name');
+    var classEl  = el('nav-class');
+    var avatarEl = el('nav-avatar');
+    if (nameEl)   nameEl.textContent   = name;
+    if (classEl)  classEl.textContent  = klass;
+    if (avatarEl) avatarEl.textContent = auth.initials(name);
   })();
 
   el('logout-btn').addEventListener('click', function () { auth.logout(); });
@@ -126,31 +130,52 @@
     var capText  = el('cap-text');
     var capFill  = el('cap-fill');
     var capMsg   = el('cap-message');
+    var capBar   = el('cap-fill') && el('cap-fill').parentElement;
+
+    /* remove old set-goal link / done badge if re-rendering */
+    var oldLink = document.querySelector('.cap-set-link');
+    var oldDone = document.querySelector('.cap-goal-done');
+    if (oldLink) oldLink.remove();
+    if (oldDone) oldDone.remove();
 
     if (goal > 0) {
       var pct = Math.min(100, Math.round((finished / goal) * 100));
       if (capText) capText.textContent = finished + ' / ' + goal + ' (' + pct + '%)';
       if (capFill) {
         capFill.style.width = pct + '%';
-        capFill.parentElement.setAttribute('aria-valuenow', pct);
+        if (capBar) capBar.setAttribute('aria-valuenow', pct);
       }
       if (capMsg) {
         capMsg.hidden = false;
         if (finished >= goal) {
-          capMsg.textContent = 'Goal reached! You finished ' + finished + ' resource' + (finished !== 1 ? 's' : '') + '.';
+          capMsg.textContent = 'Goal reached! ' + finished + ' done.';
           capMsg.className   = 'cap-message cap-message--success';
           announce('Goal reached! You have finished ' + finished + ' of ' + goal + ' resources.', true);
+          /* show done badge in sidebar */
+          var doneEl = document.createElement('span');
+          doneEl.className = 'cap-goal-done';
+          doneEl.textContent = 'Goal complete!';
+          var sidebarCap = document.querySelector('.sidebar__cap');
+          if (sidebarCap) sidebarCap.appendChild(doneEl);
         } else {
           var left = goal - finished;
-          capMsg.textContent = left + ' more resource' + (left !== 1 ? 's' : '') + ' to reach your goal of ' + goal + '.';
+          capMsg.textContent = left + ' more to reach your goal of ' + goal + '.';
           capMsg.className   = 'cap-message';
-          announce(left + ' resource' + (left !== 1 ? 's' : '') + ' remaining to reach your goal of ' + goal + '.');
+          announce(left + ' resource' + (left !== 1 ? 's' : '') + ' remaining.');
         }
       }
     } else {
-      if (capText) capText.textContent = 'No goal set';
+      if (capText) capText.textContent = '—';
       if (capFill) capFill.style.width = '0%';
       if (capMsg)  capMsg.hidden = true;
+      /* show set-goal link */
+      var link = document.createElement('a');
+      link.href = '#';
+      link.className = 'cap-set-link';
+      link.textContent = 'Set a reading goal →';
+      link.addEventListener('click', function (e) { e.preventDefault(); navigateTo('settings'); });
+      var sidebarCap = document.querySelector('.sidebar__cap');
+      if (sidebarCap) sidebarCap.appendChild(link);
     }
   }
 

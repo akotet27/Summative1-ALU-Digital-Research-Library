@@ -1635,6 +1635,47 @@ mark {
 .sidebar-home-btn .nav-icon { flex-shrink: 0; opacity: .75; }
 .sidebar-home-btn:hover .nav-icon { opacity: 1; }
 
+/* ── Sidebar user info block ───────────────────────────────── */
+.sidebar__user {
+  padding: .7rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  flex-shrink: 0;
+}
+.sidebar__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .78rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: .02em;
+}
+.sidebar__user-info { overflow: hidden; }
+.sidebar__user-name {
+  font-weight: 600;
+  font-size: .82rem;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 1em;
+}
+.sidebar__user-class {
+  font-size: .7rem;
+  color: rgba(255,255,255,.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Sidebar brand name + sub (used in admin.html / dashboard.html) */
 .sidebar__name {
   font-family: var(--font-serif);
@@ -1672,6 +1713,69 @@ mark {
   color: #fff;
   border-color: var(--accent);
 }
+
+/* ── Sidebar reading-goal cap ──────────────────────────────── */
+.sidebar__cap {
+  margin: 0 1rem .75rem;
+  padding: .7rem .85rem;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+.cap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .4rem;
+  margin-bottom: .4rem;
+}
+.cap-label {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.5);
+}
+.sidebar__cap .cap-text {
+  font-size: .72rem;
+  font-weight: 600;
+  color: rgba(255,255,255,.85);
+  white-space: nowrap;
+}
+.cap-bar {
+  background: rgba(255,255,255,.12);
+  border-radius: 100px;
+  height: 6px;
+  overflow: hidden;
+}
+.sidebar__cap .cap-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent) 0%, #f87171 100%);
+  border-radius: 100px;
+  transition: width .6s cubic-bezier(.4,0,.2,1);
+  min-width: 0;
+}
+.cap-set-link {
+  display: block;
+  margin-top: .4rem;
+  font-size: .68rem;
+  color: rgba(255,255,255,.4);
+  text-decoration: none;
+  text-align: right;
+  transition: color var(--t);
+}
+.cap-set-link:hover { color: rgba(255,255,255,.85); text-decoration: underline; }
+.cap-goal-done {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  margin-top: .35rem;
+  font-size: .68rem;
+  font-weight: 600;
+  color: #4ade80;
+}
+.cap-goal-done::before { content: '✓ '; }
 
 /* Pending badge — white text on red */
 .nav-badge {
@@ -2219,7 +2323,7 @@ mark {
 /* ═══════════════════════════════════════════════════════════
    CHARTS & ANALYTICS
    ═══════════════════════════════════════════════════════════ */
-/* Cap / reading goal bar */
+/* Cap / reading goal bar — main content area (settings/dashboard pages) */
 .cap-bar-wrap {
   background: var(--bg-offset);
   border-radius: 100px;
@@ -2238,6 +2342,12 @@ mark {
   color: var(--text-muted);
   margin-top: .3rem;
 }
+.cap-message {
+  font-size: .8rem;
+  color: var(--text-muted);
+  margin-top: .4rem;
+}
+.cap-message--success { color: var(--primary); font-weight: 600; }
 
 /* Bar chart */
 .bar-chart {
