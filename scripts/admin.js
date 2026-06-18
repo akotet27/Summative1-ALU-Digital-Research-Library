@@ -201,20 +201,22 @@
       html += pending.map(function (r) {
         var user = users.find(function (u) { return u.id === r.userId; }) || {};
         return '<div class="pending-card" data-id="' + escHtml(r.id) + '">' +
-          '<div class="pending-card__cover" style="background:' + escHtml(r.coverColor || '#1B4D3E') + ';width:48px;height:64px;border-radius:4px;flex-shrink:0"></div>' +
-          '<div class="pending-card__body" style="flex:1;min-width:0">' +
-            '<h3 style="font-size:.95rem;font-weight:700;margin-bottom:.2rem">' + escHtml(r.title) + '</h3>' +
-            '<p style="font-size:.83rem;color:var(--text-muted);margin-bottom:.3rem">' + escHtml(r.author || '—') + '</p>' +
-            '<div style="display:flex;gap:.5rem;flex-wrap:wrap;font-size:.78rem;color:var(--text-muted)">' +
-              (r.tag ? '<span style="background:var(--bg-offset);padding:.15rem .5rem;border-radius:100px">' + escHtml(r.tag) + '</span>' : '') +
-              '<span>' + escHtml(user.name || 'Unknown') + '</span>' +
-              '<span>' + escHtml(r.dateAdded || '') + '</span>' +
+          '<div class="pending-card__header">' +
+            '<div>' +
+              '<h3 class="pending-card__title">' + escHtml(r.title) + '</h3>' +
+              '<p class="pending-card__author">' + escHtml(r.author || '—') + '</p>' +
+            '</div>' +
+            '<div class="pending-card__actions">' +
+              '<button class="btn btn--sm btn--primary approve-btn" data-id="' + escHtml(r.id) + '" aria-label="Approve ' + escHtml(r.title) + '">Approve</button>' +
+              '<button class="btn btn--sm btn--danger  reject-btn"  data-id="' + escHtml(r.id) + '" aria-label="Reject '  + escHtml(r.title) + '">Reject</button>' +
             '</div>' +
           '</div>' +
-          '<div class="pending-card__actions" style="display:flex;gap:.5rem;flex-shrink:0">' +
-            '<button class="btn btn--sm btn--primary approve-btn" data-id="' + escHtml(r.id) + '" aria-label="Approve ' + escHtml(r.title) + '">Approve</button>' +
-            '<button class="btn btn--sm btn--danger  reject-btn"  data-id="' + escHtml(r.id) + '" aria-label="Reject ' + escHtml(r.title) + '">Reject</button>' +
+          '<div class="pending-card__meta">' +
+            (r.tag ? '<span>' + escHtml(r.tag) + '</span>' : '') +
+            (r.dateAdded ? '<span>' + escHtml(r.dateAdded) + '</span>' : '') +
           '</div>' +
+          (r.description ? '<p class="pending-card__desc">' + escHtml(r.description.slice(0, 200)) + (r.description.length > 200 ? '…' : '') + '</p>' : '') +
+          '<p class="pending-card__submitter">Submitted by: <strong>' + escHtml(user.name || 'Unknown') + '</strong></p>' +
         '</div>';
       }).join('');
     }
@@ -224,15 +226,16 @@
       html += rejected.map(function (r) {
         var user = users.find(function (u) { return u.id === r.userId; }) || {};
         return '<div class="pending-card" style="opacity:.75">' +
-          '<div style="background:' + escHtml(r.coverColor || '#888') + ';width:48px;height:64px;border-radius:4px;flex-shrink:0"></div>' +
-          '<div style="flex:1;min-width:0">' +
-            '<h3 style="font-size:.95rem;font-weight:700;margin-bottom:.2rem">' + escHtml(r.title) + '</h3>' +
-            '<p style="font-size:.83rem;color:var(--text-muted);margin-bottom:.3rem">' + escHtml(r.author || '—') + ' · ' + escHtml(user.name || 'Unknown') + '</p>' +
-            '<p style="font-size:.82rem;color:var(--red);font-style:italic">"' + escHtml(r.rejectedReason) + '"</p>' +
+          '<div class="pending-card__header">' +
+            '<div>' +
+              '<h3 class="pending-card__title">' + escHtml(r.title) + '</h3>' +
+              '<p class="pending-card__author">' + escHtml(r.author || '—') + ' · ' + escHtml(user.name || 'Unknown') + '</p>' +
+            '</div>' +
+            '<div class="pending-card__actions">' +
+              '<button class="btn btn--sm btn--outline approve-btn" data-id="' + escHtml(r.id) + '" aria-label="Approve ' + escHtml(r.title) + '">Approve instead</button>' +
+            '</div>' +
           '</div>' +
-          '<div style="flex-shrink:0">' +
-            '<button class="btn btn--sm btn--outline approve-btn" data-id="' + escHtml(r.id) + '" aria-label="Approve ' + escHtml(r.title) + '">Approve</button>' +
-          '</div>' +
+          '<p style="font-size:.82rem;color:var(--red);font-style:italic;padding:.5rem 0">Rejected: "' + escHtml(r.rejectedReason) + '"</p>' +
         '</div>';
       }).join('');
     }
