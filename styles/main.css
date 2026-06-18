@@ -3605,6 +3605,359 @@ mark {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   DASHBOARD SECTIONS — chart / shelf / notes preview
+   ═══════════════════════════════════════════════════════════ */
+.chart-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem 1.5rem;
+  margin-top: 1.5rem;
+  box-shadow: var(--shadow);
+}
+.chart-section h2 {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 1rem;
+  padding-bottom: .5rem;
+  border-bottom: 2px solid var(--border);
+}
+
+/* Fix bar chart: give bars proper minimum height and better colors */
+.bar-chart {
+  height: 160px;
+}
+.bar-col__bar {
+  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-mid) 100%);
+  min-height: 8px;
+}
+[data-theme="dark"] .bar-col__bar {
+  background: linear-gradient(180deg, var(--accent) 0%, var(--primary-mid) 100%);
+}
+
+/* Bookshelf section */
+.shelf-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem 1.5rem;
+  margin-top: 1.5rem;
+  box-shadow: var(--shadow);
+}
+.shelf-section h2 {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding-bottom: .5rem;
+  border-bottom: 2px solid var(--border);
+}
+.shelf-hint {
+  font-family: var(--font-sans, Inter, sans-serif);
+  font-size: .73rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+.bookshelf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 56px;
+  align-items: flex-end;
+  padding: .25rem 0;
+}
+.book-spine {
+  height: 56px;
+  min-width: 20px;
+  max-width: 44px;
+  flex: 1 0 20px;
+  border-radius: 3px 4px 4px 3px;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  transition: transform var(--t), box-shadow var(--t);
+  box-shadow: 2px 2px 4px rgba(0,0,0,.15);
+}
+.book-spine:hover {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 3px 6px 12px rgba(0,0,0,.22);
+  z-index: 2;
+}
+.book-spine--want    { background: linear-gradient(180deg, #1E3A6E, #0F2A5C); }
+.book-spine--reading { background: linear-gradient(180deg, #E8950A, #D97706); }
+.book-spine--finished { background: linear-gradient(180deg, #16a34a, #0f7a30); }
+.book-spine__title {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: .6rem;
+  font-weight: 600;
+  color: rgba(255,255,255,.85);
+  padding: 4px 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-height: 100%;
+  display: block;
+}
+
+/* Recent notes preview section */
+.notes-preview-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem 1.5rem;
+  margin-top: 1.5rem;
+  box-shadow: var(--shadow);
+}
+.notes-preview-section h2 {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 1rem;
+  padding-bottom: .5rem;
+  border-bottom: 2px solid var(--border);
+}
+.note-preview {
+  background: var(--bg-offset);
+  border-radius: var(--radius);
+  padding: .75rem 1rem;
+  margin-bottom: .6rem;
+  border-left: 3px solid var(--primary);
+}
+.note-preview__content {
+  font-size: .875rem;
+  color: var(--text);
+  line-height: 1.55;
+  margin-bottom: .3rem;
+}
+.note-preview__book {
+  display: inline-block;
+  font-size: .73rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: rgba(15,42,92,.08);
+  padding: .15rem .55rem;
+  border-radius: 100px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NOTE STATUS BADGES — approval workflow
+   ═══════════════════════════════════════════════════════════ */
+.note-card__approval {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  margin-top: -.1rem;
+}
+.note-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .22rem .7rem;
+  border-radius: 100px;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  width: fit-content;
+}
+.note-status--pending  { background: #FFF7ED; color: #C2410C; border: 1px solid #FDBA74; }
+.note-status--approved { background: #F0FDF4; color: #15803D; border: 1px solid #86EFAC; }
+.note-status--rejected { background: #FEF2F2; color: #B91C1C; border: 1px solid #FCA5A5; }
+[data-theme="dark"] .note-status--pending  { background: rgba(194,65,12,.15);  color: #FB923C; border-color: rgba(194,65,12,.4); }
+[data-theme="dark"] .note-status--approved { background: rgba(21,128,61,.15);  color: #4ADE80; border-color: rgba(21,128,61,.4); }
+[data-theme="dark"] .note-status--rejected { background: rgba(185,28,28,.15);  color: #F87171; border-color: rgba(185,28,28,.4); }
+
+.note-facil-comment {
+  font-size: .8rem;
+  color: var(--text-muted);
+  background: var(--bg-offset);
+  border-left: 2px solid var(--border);
+  padding: .3rem .65rem;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-style: italic;
+  line-height: 1.5;
+}
+.note-card__actions {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   VIEW MODAL DESCRIPTION
+   ═══════════════════════════════════════════════════════════ */
+.view-modal__desc {
+  font-size: .875rem;
+  color: var(--text-muted);
+  line-height: 1.65;
+  background: var(--bg-offset);
+  border-radius: var(--radius);
+  padding: .85rem 1rem;
+  border-left: 3px solid var(--primary-mid);
+  margin-top: .25rem;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.view-meta-item--nopdf {
+  background: #FEF2F2;
+  color: var(--accent);
+  border-color: #FCA5A5;
+}
+[data-theme="dark"] .view-meta-item--nopdf {
+  background: rgba(185,28,28,.15);
+  color: #F87171;
+  border-color: rgba(185,28,28,.35);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   APPROVALS TABS (admin dashboard)
+   ═══════════════════════════════════════════════════════════ */
+.approvals-tabs {
+  display: flex;
+  gap: .4rem;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+.approvals-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .55rem 1.1rem;
+  border-radius: var(--radius) var(--radius) 0 0;
+  border: 1px solid transparent;
+  border-bottom: none;
+  background: transparent;
+  font-size: .875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--t), color var(--t), border-color var(--t);
+  position: relative;
+  bottom: -2px;
+}
+.approvals-tab:hover {
+  background: var(--bg-offset);
+  color: var(--text);
+}
+.approvals-tab.active {
+  background: var(--bg-card);
+  color: var(--primary);
+  border-color: var(--border);
+  border-bottom-color: var(--bg-card);
+  font-weight: 600;
+}
+[data-theme="dark"] .approvals-tab.active {
+  background: var(--bg-card);
+  color: #EEF2FF;
+  border-color: var(--border);
+  border-bottom-color: var(--bg-card);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NOTE REVIEW MODAL BLOCK
+   ═══════════════════════════════════════════════════════════ */
+.note-review-block {
+  background: var(--bg-offset);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: .9rem 1rem;
+  margin-bottom: .5rem;
+}
+.note-review-meta {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: .4rem;
+}
+.note-review-content {
+  font-size: .9rem;
+  color: var(--text);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   REQUEST CARDS (book access requests in admin approvals)
+   ═══════════════════════════════════════════════════════════ */
+.request-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  margin-bottom: .85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow);
+  border-left: 4px solid var(--primary-mid);
+}
+.request-card__info { flex: 1; min-width: 0; }
+.request-card__title {
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: .2rem;
+}
+.request-card__student {
+  font-size: .8rem;
+  color: var(--text-muted);
+}
+.request-card__date {
+  font-size: .75rem;
+  color: var(--text-muted);
+  margin-top: .2rem;
+}
+.request-card__actions {
+  display: flex;
+  gap: .5rem;
+  flex-shrink: 0;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK THEME — section backgrounds
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .chart-section,
+[data-theme="dark"] .shelf-section,
+[data-theme="dark"] .notes-preview-section {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+[data-theme="dark"] .chart-section h2,
+[data-theme="dark"] .shelf-section h2,
+[data-theme="dark"] .notes-preview-section h2 {
+  color: var(--text);
+  border-bottom-color: var(--border);
+}
+[data-theme="dark"] .note-preview {
+  background: var(--bg-offset);
+  border-left-color: var(--primary-mid);
+}
+[data-theme="dark"] .note-preview__content { color: var(--text); }
+[data-theme="dark"] .note-review-block { background: var(--bg-offset); border-color: var(--border); }
+[data-theme="dark"] .note-review-content { color: var(--text); }
+[data-theme="dark"] .note-review-meta { color: #A5B4FC; }
+[data-theme="dark"] .request-card { background: var(--bg-card); border-color: var(--border); border-left-color: var(--primary-mid); }
+[data-theme="dark"] .request-card__title { color: var(--text); }
+[data-theme="dark"] .note-facil-comment { background: var(--bg-offset); color: var(--text-muted); border-left-color: var(--border); }
+[data-theme="dark"] .view-modal__desc { background: var(--bg-offset); border-left-color: var(--primary-mid); color: var(--text-muted); }
+
+/* ═══════════════════════════════════════════════════════════
    REDUCED MOTION
    ═══════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {

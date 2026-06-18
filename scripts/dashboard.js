@@ -369,13 +369,19 @@
           '</div>' +
           (book.pdfUrl
             ? '<button class="btn btn--sm ' + btnClass + ' start-reading-btn" data-book-id="' + escHtml(book.id) + '" aria-label="' + btnLabel + ' ' + escHtml(book.title) + '">' + btnLabel + '</button>'
-            : '<span style="font-size:.78rem;color:var(--muted)">No PDF available</span>') +
+            : '<button class="btn btn--sm btn--ghost view-details-btn" data-book-id="' + escHtml(book.id) + '">View Details</button>') +
         '</div>' +
       '</div>';
     }).join('');
 
     gridEl.querySelectorAll('.start-reading-btn').forEach(function (btn) {
       btn.addEventListener('click', function () { startReading(btn.dataset.bookId); });
+    });
+    gridEl.querySelectorAll('.view-details-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var book = facBooks().find(function (b) { return b.id === btn.dataset.bookId; });
+        if (book) openViewModal(book);
+      });
     });
   }
 
@@ -769,6 +775,12 @@
       var book = recs.find(function (r) { return r.id === n.bookId; })
                || libBooks.find(function (r) { return r.id === n.bookId; });
       var date = new Date(n.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      var noteStatus = n.status || 'pending';
+      var statusLabels = { pending: '⏳ Pending review', approved: '✓ Approved', rejected: '✗ Rejected' };
+      var statusBadge = '<span class="note-status-badge note-status--' + noteStatus + '">' + (statusLabels[noteStatus] || noteStatus) + '</span>';
+      var facilComment = n.facilComment
+        ? '<p class="note-facil-comment">Facilitator: "' + escHtml(n.facilComment) + '"</p>'
+        : '';
       return '<div class="note-card">' +
         '<div class="note-card__header">' +
           (book
@@ -777,6 +789,7 @@
           '<span class="note-card__date">' + date + '</span>' +
         '</div>' +
         '<p class="note-card__content">' + escHtml(n.content) + '</p>' +
+        '<div class="note-card__approval">' + statusBadge + facilComment + '</div>' +
         '<div class="note-card__actions">' +
           '<button class="btn btn--xs btn--ghost note-edit" data-nid="' + escHtml(n.id) + '">Edit</button>' +
           '<button class="btn btn--xs btn--ghost note-delete" data-nid="' + escHtml(n.id) + '" style="color:var(--red)">Delete</button>' +
@@ -971,6 +984,49 @@
     var noteBtn = el('view-edit-btn');
     if (noteBtn) noteBtn.onclick = function () { closeViewModal(); openNoteModal(null, rec.id); };
 
+    /* Description / summary */
+    var descEl = el('view-desc');
+    if (descEl) {
+      if (rec.description) { descEl.textContent = rec.description; descEl.hidden = false; }
+      else descEl.hidden = true;
+    }
+
+    /* No-PDF badge */
+    var noPdfBadge = el('view-no-pdf-badge');
+    if (noPdfBadge) noPdfBadge.hidden = !!rec.pdfUrl;
+
+    /* Request PDF access button */
+    var reqBtn = el('view-request-btn');
+    if (reqBtn) {
+      if (!rec.pdfUrl) {
+        var existingReqs = storage.loadRequests ? storage.loadRequests() : [];
+        var alreadyReq   = existingReqs.some(function (r) {
+          return r.userId === userId && r.bookId === rec.id && r.status === 'pending';
+        });
+        reqBtn.textContent = alreadyReq ? 'Access Requested ✓' : 'Request PDF Access';
+        reqBtn.disabled    = alreadyReq;
+        reqBtn.hidden      = false;
+        reqBtn.onclick = function () {
+          if (reqBtn.disabled) return;
+          var reqs = storage.loadRequests ? storage.loadRequests() : [];
+          reqs.push({
+            id:        'req_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 4),
+            userId:    userId,
+            bookId:    rec.id,
+            bookTitle: rec.title,
+            status:    'pending',
+            createdAt: new Date().toISOString()
+          });
+          if (storage.saveRequests) storage.saveRequests(reqs);
+          reqBtn.textContent = 'Access Requested ✓';
+          reqBtn.disabled    = true;
+          toast('PDF access request sent to facilitator.');
+        };
+      } else {
+        reqBtn.hidden = true;
+      }
+    }
+
     viewModal.hidden = false;
     el('view-modal-close').focus();
     document.body.style.overflow = 'hidden';
@@ -1117,15 +1173,23 @@
 
       if (existingId) {
         var idx = allNotes.findIndex(function (n) { return n.id === existingId; });
-        if (idx !== -1) { allNotes[idx].content = content; allNotes[idx].bookId = bookId; allNotes[idx].updatedAt = now; }
+        if (idx !== -1) {
+          allNotes[idx].content      = content;
+          allNotes[idx].bookId       = bookId;
+          allNotes[idx].updatedAt    = now;
+          allNotes[idx].status       = 'pending'; /* re-submit for approval on edit */
+          allNotes[idx].facilComment = '';
+        }
       } else {
         allNotes.push({
-          id:        'note_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 5),
-          userId:    userId,
-          bookId:    bookId,
-          content:   content,
-          createdAt: now,
-          updatedAt: now,
+          id:          'note_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 5),
+          userId:      userId,
+          bookId:      bookId,
+          content:     content,
+          status:      'pending',
+          facilComment: '',
+          createdAt:   now,
+          updatedAt:   now,
         });
       }
       storage.saveNotes(allNotes);

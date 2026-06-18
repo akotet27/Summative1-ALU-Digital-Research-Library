@@ -499,6 +499,10 @@
     loadNotes:    function ()      { return load(KEYS.notes, []); },
     saveNotes:    function (data)  { save(KEYS.notes, data); },
 
+    /* Book access requests from students */
+    loadRequests: function ()      { return load('alu:requests', []); },
+    saveRequests: function (data)  { save('alu:requests', data); },
+
     /* Users */
     loadUsers:    function ()      { return load(KEYS.users, []); },
     saveUsers:    function (data)  { save(KEYS.users, data); },

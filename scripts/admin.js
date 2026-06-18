@@ -204,30 +204,205 @@
     }).join('');
   }
 
-  /* ── Pending Approvals page ──────────────────────────────────── */
-  function refreshApprovals() {
-    var allRecs  = storage.loadRecords();
-    var users    = storage.loadUsers();
-    var pending  = allRecs.filter(function (r) { return !r.approved && !r.rejectedReason; });
-    var rejected = allRecs.filter(function (r) { return !r.approved && r.rejectedReason; });
+  /* ── Pending Approvals page — tabbed ────────────────────────── */
+  var currentApprovalsTab = 'notes';
 
-    var badge = el('pending-badge');
-    if (badge) {
-      if (pending.length > 0) { badge.textContent = pending.length; badge.style.display = 'inline-flex'; }
-      else badge.style.display = 'none';
+  function refreshApprovals() {
+    updateAllApprovalBadges();
+    if (currentApprovalsTab === 'notes')    renderNotesApprovals();
+    if (currentApprovalsTab === 'requests') renderRequestsApprovals();
+    if (currentApprovalsTab === 'books')    renderBooksApprovals();
+  }
+
+  /* Wire tab buttons */
+  document.querySelectorAll('.approvals-tab').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.approvals-tab').forEach(function (b) {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      currentApprovalsTab = btn.dataset.tab;
+      var panels = ['approvals-notes', 'approvals-requests', 'approvals-books'];
+      panels.forEach(function (pid) {
+        var p = el(pid);
+        if (p) p.hidden = (pid !== 'approvals-' + currentApprovalsTab);
+      });
+      refreshApprovals();
+    });
+  });
+
+  function updateAllApprovalBadges() {
+    var allNotes    = storage.loadNotes();
+    var allReqs     = storage.loadRequests ? storage.loadRequests() : [];
+    var allRecs     = storage.loadRecords();
+    var pendingNotes = allNotes.filter(function (n) { return (n.status || 'pending') === 'pending'; });
+    var pendingReqs  = allReqs.filter(function (r) { return r.status === 'pending'; });
+    var pendingBooks = allRecs.filter(function (r) { return !r.approved && !r.rejectedReason && !r.addedByFacilitator; });
+    var totalPending = pendingNotes.length + pendingReqs.length + pendingBooks.length;
+
+    function setBadge(id, count) {
+      var b = el(id);
+      if (!b) return;
+      b.textContent = count;
+      b.style.display = count > 0 ? 'inline-flex' : 'none';
+    }
+    setBadge('notes-pending-badge',  pendingNotes.length);
+    setBadge('req-pending-badge',    pendingReqs.length);
+    setBadge('books-pending-badge',  pendingBooks.length);
+    setBadge('pending-badge',        totalPending);
+  }
+
+  /* ── Tab: Student Notes ──────────────────────────────────────── */
+  function renderNotesApprovals() {
+    var allNotes = storage.loadNotes();
+    var users    = storage.loadUsers();
+    var allRecs  = storage.loadRecords();
+    var pending  = allNotes.filter(function (n) { return (n.status || 'pending') === 'pending'; });
+    var reviewed = allNotes.filter(function (n) { return n.status === 'approved' || n.status === 'rejected'; });
+    var container = el('approvals-notes');
+    if (!container) return;
+
+    if (pending.length === 0 && reviewed.length === 0) {
+      container.innerHTML = '<div class="empty-state" style="padding:2rem"><p>No notes to review yet.</p></div>';
+      return;
     }
 
-    var container = el('approvals-container');
+    function buildNoteCard(n, dim) {
+      var user = users.find(function (u) { return u.id === n.userId; }) || {};
+      var book = allRecs.find(function (r) { return r.id === n.bookId; });
+      var date = new Date(n.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      var noteStatus = n.status || 'pending';
+      var statusLabels = { pending: 'Pending', approved: 'Approved', rejected: 'Rejected' };
+      return '<div class="pending-card' + (dim ? '" style="opacity:.8' : '') + '">' +
+        '<div class="pending-card__header">' +
+          '<div style="flex:1;min-width:0">' +
+            '<h3 class="pending-card__title" style="font-size:.9rem">' + escHtml(user.name || 'Unknown') + '</h3>' +
+            (book ? '<p class="pending-card__author">On: <em>' + escHtml(book.title) + '</em></p>' : '<p class="pending-card__author">Freestanding note</p>') +
+            '<p style="font-size:.8rem;color:var(--text-muted);margin-top:.2rem">' + date + '</p>' +
+          '</div>' +
+          (!dim
+            ? '<div class="pending-card__actions">' +
+                '<button class="btn btn--sm btn--primary note-review-btn" data-nid="' + escHtml(n.id) + '">Review</button>' +
+              '</div>'
+            : '<span class="note-status-badge note-status--' + noteStatus + '" style="flex-shrink:0">' + statusLabels[noteStatus] + '</span>') +
+        '</div>' +
+        '<p style="font-size:.875rem;color:var(--text);background:var(--bg-offset);border-radius:var(--radius);padding:.65rem .9rem;margin-top:.5rem;line-height:1.6;border-left:3px solid var(--primary-mid)">' +
+          escHtml(n.content.slice(0, 300)) + (n.content.length > 300 ? '…' : '') +
+        '</p>' +
+        (n.facilComment ? '<p style="font-size:.8rem;color:var(--text-muted);font-style:italic;margin-top:.4rem;padding-left:.5rem">Facilitator: "' + escHtml(n.facilComment) + '"</p>' : '') +
+      '</div>';
+    }
+
+    var html = '';
+    if (pending.length > 0) {
+      html += '<h2 style="font-family:var(--font-serif);font-size:1.1rem;margin-bottom:.85rem;color:var(--primary)">Awaiting Review (' + pending.length + ')</h2>';
+      html += pending.map(function (n) { return buildNoteCard(n, false); }).join('');
+    }
+    if (reviewed.length > 0) {
+      html += '<h2 style="font-family:var(--font-serif);font-size:1.1rem;margin:1.5rem 0 .85rem;color:var(--primary)">Previously Reviewed (' + reviewed.length + ')</h2>';
+      html += reviewed.map(function (n) { return buildNoteCard(n, true); }).join('');
+    }
+
+    container.innerHTML = html;
+
+    container.querySelectorAll('.note-review-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () { openNoteReviewModal(btn.dataset.nid); });
+    });
+  }
+
+  /* ── Tab: Book Requests ──────────────────────────────────────── */
+  function renderRequestsApprovals() {
+    var allReqs  = storage.loadRequests ? storage.loadRequests() : [];
+    var users    = storage.loadUsers();
+    var container = el('approvals-requests');
+    if (!container) return;
+
+    var pending  = allReqs.filter(function (r) { return r.status === 'pending'; });
+    var resolved = allReqs.filter(function (r) { return r.status !== 'pending'; });
+
+    if (pending.length === 0 && resolved.length === 0) {
+      container.innerHTML = '<div class="empty-state" style="padding:2rem"><p>No book access requests yet.</p></div>';
+      return;
+    }
+
+    function buildReqCard(req, dim) {
+      var user = users.find(function (u) { return u.id === req.userId; }) || {};
+      var date = new Date(req.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return '<div class="request-card' + (dim ? '" style="opacity:.8' : '') + '">' +
+        '<div class="request-card__info">' +
+          '<p class="request-card__title">PDF Request: ' + escHtml(req.bookTitle || '—') + '</p>' +
+          '<p class="request-card__student">From: <strong>' + escHtml(user.name || 'Unknown') + '</strong> · ' + escHtml(user.class || '') + '</p>' +
+          '<p class="request-card__date">' + date + (req.facilComment ? ' · "' + escHtml(req.facilComment) + '"' : '') + '</p>' +
+        '</div>' +
+        (!dim
+          ? '<div class="request-card__actions">' +
+              '<button class="btn btn--sm btn--primary approve-req-btn" data-rid="' + escHtml(req.id) + '">Approve</button>' +
+              '<button class="btn btn--sm btn--danger reject-req-btn" data-rid="' + escHtml(req.id) + '">Decline</button>' +
+            '</div>'
+          : '<span class="note-status-badge note-status--' + escHtml(req.status) + '" style="flex-shrink:0">' + (req.status === 'approved' ? 'Approved' : 'Declined') + '</span>') +
+      '</div>';
+    }
+
+    var html = '';
+    if (pending.length > 0) {
+      html += '<h2 style="font-family:var(--font-serif);font-size:1.1rem;margin-bottom:.85rem;color:var(--primary)">Pending Requests (' + pending.length + ')</h2>';
+      html += pending.map(function (r) { return buildReqCard(r, false); }).join('');
+    }
+    if (resolved.length > 0) {
+      html += '<h2 style="font-family:var(--font-serif);font-size:1.1rem;margin:1.5rem 0 .85rem;color:var(--primary)">Resolved (' + resolved.length + ')</h2>';
+      html += resolved.map(function (r) { return buildReqCard(r, true); }).join('');
+    }
+
+    container.innerHTML = html;
+
+    container.querySelectorAll('.approve-req-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        openConfirm('Approve this PDF access request?', function () {
+          var reqs = storage.loadRequests();
+          var idx  = reqs.findIndex(function (r) { return r.id === btn.dataset.rid; });
+          if (idx !== -1) { reqs[idx].status = 'approved'; reqs[idx].facilComment = 'PDF access approved — book will be updated soon.'; }
+          storage.saveRequests(reqs);
+          toast('Request approved.');
+          updateAllApprovalBadges();
+          renderRequestsApprovals();
+        });
+      });
+    });
+
+    container.querySelectorAll('.reject-req-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        openConfirm('Decline this PDF access request?', function () {
+          var reqs = storage.loadRequests();
+          var idx  = reqs.findIndex(function (r) { return r.id === btn.dataset.rid; });
+          if (idx !== -1) { reqs[idx].status = 'rejected'; reqs[idx].facilComment = 'PDF not currently available for this title.'; }
+          storage.saveRequests(reqs);
+          toast('Request declined.');
+          updateAllApprovalBadges();
+          renderRequestsApprovals();
+        });
+      });
+    });
+  }
+
+  /* ── Tab: Book Submissions ───────────────────────────────────── */
+  function renderBooksApprovals() {
+    var allRecs  = storage.loadRecords();
+    var users    = storage.loadUsers();
+    var pending  = allRecs.filter(function (r) { return !r.approved && !r.rejectedReason && !r.addedByFacilitator; });
+    var rejected = allRecs.filter(function (r) { return !r.approved && r.rejectedReason; });
+    var container = el('approvals-books');
     if (!container) return;
 
     if (pending.length === 0 && rejected.length === 0) {
-      container.innerHTML = '<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg><h3>All clear!</h3><p>No submissions awaiting review.</p></div>';
+      container.innerHTML = '<div class="empty-state" style="padding:2rem"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg><h3>All clear!</h3><p>No book submissions awaiting review.</p></div>';
       return;
     }
 
     var html = '';
     if (pending.length > 0) {
-      html += '<h2 style="font-family:var(--font-serif);font-size:1.25rem;margin-bottom:1rem;color:var(--primary)">Awaiting Review (' + pending.length + ')</h2>';
+      html += '<h2 style="font-family:var(--font-serif);font-size:1.1rem;margin-bottom:.85rem;color:var(--primary)">Awaiting Review (' + pending.length + ')</h2>';
       html += pending.map(function (r) {
         var user = users.find(function (u) { return u.id === r.userId; }) || {};
         return '<div class="pending-card" data-id="' + escHtml(r.id) + '">' +
@@ -237,8 +412,8 @@
               '<p class="pending-card__author">' + escHtml(r.author || '—') + '</p>' +
             '</div>' +
             '<div class="pending-card__actions">' +
-              '<button class="btn btn--sm btn--primary approve-btn" data-id="' + escHtml(r.id) + '">Approve</button>' +
-              '<button class="btn btn--sm btn--danger reject-btn" data-id="' + escHtml(r.id) + '">Reject</button>' +
+              '<button class="btn btn--sm btn--primary approve-book-btn" data-id="' + escHtml(r.id) + '">Approve</button>' +
+              '<button class="btn btn--sm btn--danger reject-book-btn" data-id="' + escHtml(r.id) + '">Reject</button>' +
             '</div>' +
           '</div>' +
           '<div class="pending-card__meta">' +
@@ -250,50 +425,102 @@
         '</div>';
       }).join('');
     }
-
     if (rejected.length > 0) {
-      html += '<h2 style="font-family:var(--font-serif);font-size:1.25rem;margin:2rem 0 1rem;color:var(--primary)">Previously Rejected (' + rejected.length + ')</h2>';
+      html += '<h2 style="font-family:var(--font-serif);font-size:1.1rem;margin:1.5rem 0 .85rem;color:var(--primary)">Previously Rejected (' + rejected.length + ')</h2>';
       html += rejected.map(function (r) {
         var user = users.find(function (u) { return u.id === r.userId; }) || {};
-        return '<div class="pending-card" style="opacity:.75">' +
+        return '<div class="pending-card" style="opacity:.8">' +
           '<div class="pending-card__header">' +
             '<div>' +
               '<h3 class="pending-card__title">' + escHtml(r.title) + '</h3>' +
               '<p class="pending-card__author">' + escHtml(r.author || '—') + ' · ' + escHtml(user.name || 'Unknown') + '</p>' +
             '</div>' +
             '<div class="pending-card__actions">' +
-              '<button class="btn btn--sm btn--outline approve-btn" data-id="' + escHtml(r.id) + '">Approve instead</button>' +
+              '<button class="btn btn--sm btn--outline approve-book-btn" data-id="' + escHtml(r.id) + '">Approve instead</button>' +
             '</div>' +
           '</div>' +
-          '<p style="font-size:.82rem;color:var(--red);font-style:italic;padding:.5rem 0">Rejected: "' + escHtml(r.rejectedReason) + '"</p>' +
+          '<p style="font-size:.82rem;color:var(--red);font-style:italic;padding:.35rem 0">Rejected: "' + escHtml(r.rejectedReason) + '"</p>' +
         '</div>';
       }).join('');
     }
 
     container.innerHTML = html;
-
-    container.querySelectorAll('.approve-btn').forEach(function (btn) {
+    container.querySelectorAll('.approve-book-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        openConfirm('Approve this book?', function () {
+        openConfirm('Approve and publish this book?', function () {
           storage.approveRecord(btn.dataset.id, userId);
           toast('Book approved and published to the catalog.');
-          refreshApprovals();
+          updateAllApprovalBadges();
+          renderBooksApprovals();
         });
       });
     });
-
-    container.querySelectorAll('.reject-btn').forEach(function (btn) {
+    container.querySelectorAll('.reject-book-btn').forEach(function (btn) {
       btn.addEventListener('click', function () { openRejectModal(btn.dataset.id); });
     });
   }
 
-  /* ── Reject modal ─────────────────────────────────────────────── */
+  /* ── Note Review Modal ───────────────────────────────────────── */
+  var noteReviewModal = el('note-review-modal');
+
+  function openNoteReviewModal(noteId) {
+    var allNotes = storage.loadNotes();
+    var users    = storage.loadUsers();
+    var allRecs  = storage.loadRecords();
+    var note     = allNotes.find(function (n) { return n.id === noteId; });
+    if (!note || !noteReviewModal) return;
+    var user = users.find(function (u) { return u.id === note.userId; }) || {};
+    var book = allRecs.find(function (r) { return r.id === note.bookId; });
+    el('nr-note-id').value        = noteId;
+    el('note-review-meta').textContent    = (user.name || 'Unknown') + (book ? ' — ' + book.title : ' — Freestanding note');
+    el('note-review-content').textContent = note.content;
+    el('nr-comment').value        = '';
+    el('nr-comment-err').textContent = '';
+    noteReviewModal.hidden = false;
+    el('nr-comment').focus();
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeNoteReviewModal() {
+    if (noteReviewModal) noteReviewModal.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  el('note-review-close') && el('note-review-close').addEventListener('click', closeNoteReviewModal);
+  el('nr-cancel-btn')     && el('nr-cancel-btn').addEventListener('click', closeNoteReviewModal);
+  if (noteReviewModal) noteReviewModal.addEventListener('click', function (e) { if (e.target === noteReviewModal) closeNoteReviewModal(); });
+
+  function submitNoteReview(action) {
+    var comment = (el('nr-comment').value || '').trim();
+    var noteId  = el('nr-note-id').value;
+    var errEl   = el('nr-comment-err');
+    if (!comment) { if (errEl) errEl.textContent = 'Please add a comment for the student.'; return; }
+    if (errEl) errEl.textContent = '';
+
+    var allNotes = storage.loadNotes();
+    var idx = allNotes.findIndex(function (n) { return n.id === noteId; });
+    if (idx === -1) { toast('Note not found.', 'error'); return; }
+    allNotes[idx].status       = action; /* 'approved' or 'rejected' */
+    allNotes[idx].facilComment = comment;
+    allNotes[idx].approvedBy   = userId;
+    allNotes[idx].approvedAt   = new Date().toISOString();
+    storage.saveNotes(allNotes);
+    toast('Note ' + (action === 'approved' ? 'approved' : 'rejected') + '.');
+    closeNoteReviewModal();
+    updateAllApprovalBadges();
+    renderNotesApprovals();
+  }
+
+  el('nr-approve-btn') && el('nr-approve-btn').addEventListener('click', function () { submitNoteReview('approved'); });
+  el('nr-reject-btn')  && el('nr-reject-btn').addEventListener('click',  function () { submitNoteReview('rejected'); });
+
+  /* ── Reject modal (book submissions) ────────────────────────── */
   var rejectModal = el('reject-modal');
 
   function openRejectModal(recordId) {
     if (!rejectModal) {
       var reason = window.prompt('Enter rejection reason:');
-      if (reason) { storage.rejectRecord(recordId, reason); toast('Submission rejected.'); refreshApprovals(); }
+      if (reason) { storage.rejectRecord(recordId, reason); toast('Submission rejected.'); renderBooksApprovals(); }
       return;
     }
     el('reject-record-id').value  = recordId;
@@ -322,17 +549,13 @@
     storage.rejectRecord(recordId, reason);
     toast('Submission rejected.');
     closeRejectModal();
-    refreshApprovals();
+    updateAllApprovalBadges();
+    renderBooksApprovals();
   });
 
   /* Update the pending badge on page load */
   (function updatePendingBadge() {
-    var pending = storage.loadRecords().filter(function (r) { return !r.approved && !r.rejectedReason; });
-    var badge   = el('pending-badge');
-    if (badge) {
-      badge.textContent = pending.length;
-      badge.style.display = pending.length > 0 ? 'inline-flex' : 'none';
-    }
+    updateAllApprovalBadges();
   })();
 
   /* ── Students by Class page ──────────────────────────────────── */
@@ -1101,6 +1324,7 @@
     if (e.key !== 'Escape') return;
     if (bookFormModal     && !bookFormModal.hidden)     { closeBookFormModal();     return; }
     if (studentEditModal  && !studentEditModal.hidden)  { closeStudentEditModal();  return; }
+    if (noteReviewModal   && !noteReviewModal.hidden)   { closeNoteReviewModal();   return; }
     if (rejectModal       && !rejectModal.hidden)       { closeRejectModal();       return; }
     if (viewModal         && !viewModal.hidden)         { closeViewModal();         return; }
     if (confirmOverlay    && !confirmOverlay.hidden)    { closeConfirm();           return; }
