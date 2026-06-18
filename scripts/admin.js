@@ -25,6 +25,30 @@
 
   var STATUS_LABEL = { want: 'Want to Read', reading: 'Reading', finished: 'Finished' };
 
+  var TAG_COLORS = {
+    'Entrepreneurship':        '#0F2A5C',
+    'Leadership':              '#1E3A6E',
+    'Innovation':              '#1a3d7c',
+    'Design Thinking':         '#6B1A2A',
+    'Social Entrepreneurship': '#1A3D6B',
+    'Software Development':    '#0F2A5C',
+    'AI & Machine Learning':   '#0D1A6B',
+    'Data Science':            '#0D3D6B',
+    'Computing':               '#1A2A5A',
+    'International Business':  '#3D1A0A',
+    'Global Development':      '#1A1A3D',
+    'Behavioral Economics':    '#2A1A3D',
+    'Sustainability':          '#0D3D2A',
+    'Finance':                 '#1A1A4D',
+    'Communication':           '#1A3A5A',
+    'Ethics':                  '#2D1B69'
+  };
+
+  function randomColor() {
+    var colors = Object.values(TAG_COLORS);
+    return colors[Math.floor(Math.random() * colors.length)];
+  }
+
   /* ── Toast ───────────────────────────────────────────────────── */
   var toastTimer;
   function toast(msg, type) {
@@ -84,13 +108,12 @@
       else a.removeAttribute('aria-current');
     });
     closeSidebar();
-    if (page === 'upload')        refreshUpload();
-    if (page === 'overview')     refreshOverview();
-    if (page === 'approvals')    refreshApprovals();
-    if (page === 'students')     refreshStudents();
-    if (page === 'library')      refreshAdminLibrary();
-    if (page === 'reports')      refreshReports();
-    if (page === 'recommended')  refreshRecommended();
+    if (page === 'overview')    refreshOverview();
+    if (page === 'approvals')   refreshApprovals();
+    if (page === 'students')    refreshStudents();
+    if (page === 'library')     refreshAdminLibrary();
+    if (page === 'reports')     refreshReports();
+    if (page === 'recommended') refreshRecommended();
   }
 
   document.querySelectorAll('.nav-link').forEach(function (link) {
@@ -99,127 +122,6 @@
       navigateTo(link.dataset.page);
     });
   });
-
-  /* ── Upload Book page ───────────────────────────────────────── */
-  var TAG_COLORS = {
-    /* BEL */
-    'Entrepreneurship': '#0F2A5C', 'Leadership': '#1E3A6E',
-    'Innovation': '#1a3d7c', 'Design Thinking': '#6B1A2A',
-    'Social Entrepreneurship': '#1A3D6B',
-    /* BSE */
-    'Software Development': '#0F2A5C', 'AI & Machine Learning': '#0D1A6B',
-    'Data Science': '#0D3D6B', 'Computing': '#1A2A5A',
-    /* IBT */
-    'International Business': '#3D1A0A', 'Global Development': '#1A1A3D',
-    'Behavioral Economics': '#2A1A3D', 'Sustainability': '#0D3D2A',
-    /* General */
-    'Finance': '#1A1A4D', 'Communication': '#1A3A5A', 'Ethics': '#2D1B69'
-  };
-
-  function randomColor() {
-    var colors = Object.values(TAG_COLORS);
-    return colors[Math.floor(Math.random() * colors.length)];
-  }
-
-  function refreshUpload() {
-    var form   = el('upload-form');
-    var imgIn  = el('ub-cover');
-    var imgPre = el('ub-cover-preview');
-    var imgEl  = el('ub-cover-img');
-
-    /* Live cover preview */
-    if (imgIn && imgPre && imgEl) {
-      imgIn.addEventListener('input', function () {
-        var url = imgIn.value.trim();
-        if (url) {
-          imgEl.src = url;
-          imgPre.style.display = 'block';
-        } else {
-          imgPre.style.display = 'none';
-        }
-      });
-    }
-
-    if (!form || form._wired) return;
-    form._wired = true;
-
-    form.addEventListener('reset', function () {
-      if (imgPre) imgPre.style.display = 'none';
-      form.querySelectorAll('.form-error').forEach(function (e) { e.textContent = ''; });
-    });
-
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var errGlobal = el('upload-form-err');
-      if (errGlobal) errGlobal.textContent = '';
-
-      var titleEl   = el('ub-title');
-      var authorEl  = el('ub-author');
-      var pagesEl   = el('ub-pages');
-      var tagEl     = el('ub-tag');
-      var summaryEl = el('ub-summary');
-      var coverEl   = el('ub-cover');
-      var pdfEl     = el('ub-pdf');
-      var isbnEl    = el('ub-isbn');
-      var recEl     = el('ub-recommended');
-
-      var valid = true;
-
-      function fieldErr(errId, msg) {
-        var e = el(errId);
-        if (e) e.textContent = msg;
-        valid = false;
-      }
-
-      if (!titleEl.value.trim())   fieldErr('ub-title-err',   'Title is required.');
-      if (!authorEl.value.trim())  fieldErr('ub-author-err',  'Author is required.');
-      if (!summaryEl.value.trim()) fieldErr('ub-summary-err', 'Summary is required.');
-
-      var pages = parseInt(pagesEl.value, 10);
-      if (!pagesEl.value.trim() || isNaN(pages) || pages < 1) {
-        fieldErr('ub-pages-err', 'Enter a valid page count.');
-      }
-      if (!tagEl.value.trim())     fieldErr('ub-tag-err', 'Topic / Tag is required.');
-
-      if (!valid) return;
-
-      /* Clear previous errors */
-      ['ub-title-err','ub-author-err','ub-pages-err','ub-tag-err','ub-summary-err'].forEach(function (id) {
-        var e = el(id); if (e) e.textContent = '';
-      });
-
-      var tag = tagEl.value.trim();
-      var rec = {
-        id:               'r_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-        userId:           userId,
-        title:            titleEl.value.trim(),
-        author:           authorEl.value.trim(),
-        pages:            pages,
-        tag:              tag,
-        description:      summaryEl.value.trim(),
-        coverUrl:         coverEl.value.trim() || '',
-        coverColor:       TAG_COLORS[tag] || randomColor(),
-        pdfUrl:           pdfEl   ? pdfEl.value.trim()  : '',
-        isbn:             isbnEl  ? isbnEl.value.trim()  : '',
-        recommended:      recEl   ? recEl.checked        : false,
-        status:           'finished',
-        approved:         true,
-        approvedBy:       userId,
-        approvedAt:       new Date().toISOString(),
-        addedByFacilitator: true,
-        dateAdded:        new Date().toISOString().slice(0, 10),
-        notes:            ''
-      };
-
-      var recs = storage.loadRecords();
-      recs.push(rec);
-      storage.saveRecords(recs);
-
-      toast('"' + rec.title + '" published to the catalog.');
-      form.reset();
-      announce('Book published: ' + rec.title);
-    });
-  }
 
   /* ── Overview page ───────────────────────────────────────────── */
   function refreshOverview() {
@@ -239,11 +141,9 @@
     allRecs.forEach(function (r) { if (r.tag) tagCounts[r.tag] = (tagCounts[r.tag] || 0) + 1; });
     var topTag = Object.keys(tagCounts).sort(function (a, b) { return tagCounts[b] - tagCounts[a]; })[0] || '—';
 
-    /* Notes written by students */
-    var stuIds = students.map(function (s) { return s.id; });
+    var stuIds   = students.map(function (s) { return s.id; });
     var stuNotes = allNotes.filter(function (n) { return stuIds.indexOf(n.userId) !== -1; });
 
-    /* Students who have at least one record currently being read */
     var activeReaders = students.filter(function (stu) {
       return allRecs.some(function (r) { return r.userId === stu.id && r.status === 'reading'; });
     }).length;
@@ -259,14 +159,13 @@
     set('fac-stat-active',   activeReaders);
 
     var subtitle = el('fac-subtitle');
-    if (subtitle) subtitle.textContent = students.length + ' students · ' + allRecs.length + ' resources tracked · ' + stuNotes.length + ' notes';
+    if (subtitle) subtitle.textContent = students.length + ' students · ' + allRecs.length + ' resources · ' + stuNotes.length + ' notes';
 
     renderTagChart(allRecs);
     renderHealthGrid(allRecs, students);
     announce('Overview updated. ' + allRecs.length + ' total resources.');
   }
 
-  /* Resources by tag bar chart */
   function renderTagChart(recs) {
     var chartEl = el('tag-chart');
     if (!chartEl) return;
@@ -284,17 +183,14 @@
     }).join('');
   }
 
-  /* Library health grid: one cell per student */
   function renderHealthGrid(allRecs, students) {
     var gridEl = el('fac-health-grid');
     if (!gridEl) return;
     if (students.length === 0) { gridEl.innerHTML = '<p class="empty-state" style="padding:1rem">No students yet.</p>'; return; }
-
     gridEl.innerHTML = students.map(function (stu) {
-      var stuRecs  = allRecs.filter(function (r) { return r.userId === stu.id; });
-      var done     = stuRecs.filter(function (r) { return r.status === 'finished'; }).length;
-      var reading  = stuRecs.filter(function (r) { return r.status === 'reading'; }).length;
-      var cls      = done > 5 ? 'health--high' : done > 2 ? 'health--mid' : 'health--low';
+      var stuRecs = allRecs.filter(function (r) { return r.userId === stu.id; });
+      var done    = stuRecs.filter(function (r) { return r.status === 'finished'; }).length;
+      var cls     = done > 5 ? 'health--high' : done > 2 ? 'health--mid' : 'health--low';
       return '<div class="health-cell ' + cls + '" title="' + escHtml(stu.name) + ' · ' + done + ' finished">' +
         '<span class="health-cell__name">' + escHtml(auth.initials(stu.name)) + '</span>' +
         '<span class="health-cell__count">' + stuRecs.length + '</span>' +
@@ -309,15 +205,10 @@
     var pending  = allRecs.filter(function (r) { return !r.approved && !r.rejectedReason; });
     var rejected = allRecs.filter(function (r) { return !r.approved && r.rejectedReason; });
 
-    /* Update nav badge */
     var badge = el('pending-badge');
     if (badge) {
-      if (pending.length > 0) {
-        badge.textContent = pending.length;
-        badge.style.display = 'inline-flex';
-      } else {
-        badge.style.display = 'none';
-      }
+      if (pending.length > 0) { badge.textContent = pending.length; badge.style.display = 'inline-flex'; }
+      else badge.style.display = 'none';
     }
 
     var container = el('approvals-container');
@@ -329,7 +220,6 @@
     }
 
     var html = '';
-
     if (pending.length > 0) {
       html += '<h2 style="font-family:var(--font-serif);font-size:1.25rem;margin-bottom:1rem;color:var(--primary)">Awaiting Review (' + pending.length + ')</h2>';
       html += pending.map(function (r) {
@@ -341,8 +231,8 @@
               '<p class="pending-card__author">' + escHtml(r.author || '—') + '</p>' +
             '</div>' +
             '<div class="pending-card__actions">' +
-              '<button class="btn btn--sm btn--primary approve-btn" data-id="' + escHtml(r.id) + '" aria-label="Approve ' + escHtml(r.title) + '">Approve</button>' +
-              '<button class="btn btn--sm btn--danger  reject-btn"  data-id="' + escHtml(r.id) + '" aria-label="Reject '  + escHtml(r.title) + '">Reject</button>' +
+              '<button class="btn btn--sm btn--primary approve-btn" data-id="' + escHtml(r.id) + '">Approve</button>' +
+              '<button class="btn btn--sm btn--danger reject-btn" data-id="' + escHtml(r.id) + '">Reject</button>' +
             '</div>' +
           '</div>' +
           '<div class="pending-card__meta">' +
@@ -366,7 +256,7 @@
               '<p class="pending-card__author">' + escHtml(r.author || '—') + ' · ' + escHtml(user.name || 'Unknown') + '</p>' +
             '</div>' +
             '<div class="pending-card__actions">' +
-              '<button class="btn btn--sm btn--outline approve-btn" data-id="' + escHtml(r.id) + '" aria-label="Approve ' + escHtml(r.title) + '">Approve instead</button>' +
+              '<button class="btn btn--sm btn--outline approve-btn" data-id="' + escHtml(r.id) + '">Approve instead</button>' +
             '</div>' +
           '</div>' +
           '<p style="font-size:.82rem;color:var(--red);font-style:italic;padding:.5rem 0">Rejected: "' + escHtml(r.rejectedReason) + '"</p>' +
@@ -378,7 +268,7 @@
 
     container.querySelectorAll('.approve-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        openConfirm('Approve "' + (storage.loadRecords().find(function(r){return r.id===btn.dataset.id;}) || {}).title + '"?', function () {
+        openConfirm('Approve this book?', function () {
           storage.approveRecord(btn.dataset.id, userId);
           toast('Book approved and published to the catalog.');
           refreshApprovals();
@@ -413,27 +303,21 @@
     document.body.style.overflow = '';
   }
 
-  var rejectCloseBtn  = el('reject-modal-close');
-  var rejectCancelBtn = el('reject-cancel-btn');
-  var rejectConfirmBtn = el('reject-confirm-btn');
-
-  if (rejectCloseBtn)  rejectCloseBtn.addEventListener('click',  closeRejectModal);
-  if (rejectCancelBtn) rejectCancelBtn.addEventListener('click', closeRejectModal);
+  el('reject-modal-close')  && el('reject-modal-close').addEventListener('click', closeRejectModal);
+  el('reject-cancel-btn')   && el('reject-cancel-btn').addEventListener('click', closeRejectModal);
   if (rejectModal) rejectModal.addEventListener('click', function (e) { if (e.target === rejectModal) closeRejectModal(); });
 
-  if (rejectConfirmBtn) {
-    rejectConfirmBtn.addEventListener('click', function () {
-      var reason   = el('reject-reason').value.trim();
-      var recordId = el('reject-record-id').value;
-      var errEl    = el('reject-reason-err');
-      if (!reason) { if (errEl) errEl.textContent = 'Please enter a rejection reason.'; return; }
-      if (errEl) errEl.textContent = '';
-      storage.rejectRecord(recordId, reason);
-      toast('Submission rejected.');
-      closeRejectModal();
-      refreshApprovals();
-    });
-  }
+  el('reject-confirm-btn') && el('reject-confirm-btn').addEventListener('click', function () {
+    var reason   = el('reject-reason').value.trim();
+    var recordId = el('reject-record-id').value;
+    var errEl    = el('reject-reason-err');
+    if (!reason) { if (errEl) errEl.textContent = 'Please enter a rejection reason.'; return; }
+    if (errEl) errEl.textContent = '';
+    storage.rejectRecord(recordId, reason);
+    toast('Submission rejected.');
+    closeRejectModal();
+    refreshApprovals();
+  });
 
   /* Update the pending badge on page load */
   (function updatePendingBadge() {
@@ -462,7 +346,6 @@
       return;
     }
 
-    /* Group by class */
     var classMap = {};
     students.forEach(function (stu) {
       var cls = stu.class || 'Unassigned';
@@ -480,41 +363,79 @@
         stuList.map(function (stu) {
           var stuRecs = allRecs.filter(function (r) { return r.userId === stu.id; });
           var done    = stuRecs.filter(function (r) { return r.status === 'finished'; }).length;
-          return '<button class="student-card" data-uid="' + escHtml(stu.id) + '" aria-label="View ' + escHtml(stu.name) + '">' +
-            '<div class="student-card__avatar">' + escHtml(auth.initials(stu.name)) + '</div>' +
-            '<div class="student-card__name">' + escHtml(stu.name) + '</div>' +
-            '<div class="student-card__mission">' + escHtml(stu.mission || '—') + '</div>' +
-            '<div class="student-card__stats">' +
-              '<span>' + stuRecs.length + ' total</span>' +
-              '<span>' + done + ' finished</span>' +
+          return '<div class="student-card" data-uid="' + escHtml(stu.id) + '">' +
+            '<div class="student-card__main" role="button" tabindex="0" aria-label="View ' + escHtml(stu.name) + '">' +
+              '<div class="student-card__avatar">' + escHtml(auth.initials(stu.name)) + '</div>' +
+              '<div class="student-card__name">' + escHtml(stu.name) + '</div>' +
+              '<div class="student-card__mission">' + escHtml(stu.mission || '—') + '</div>' +
+              '<div class="student-card__stats">' +
+                '<span>' + stuRecs.length + ' total</span>' +
+                '<span>' + done + ' finished</span>' +
+              '</div>' +
             '</div>' +
-          '</button>';
+            '<div class="student-card__actions">' +
+              '<button class="btn btn--xs btn--outline stu-edit-btn" data-uid="' + escHtml(stu.id) + '" aria-label="Edit ' + escHtml(stu.name) + '">Edit</button>' +
+              '<button class="btn btn--xs btn--danger stu-del-btn" data-uid="' + escHtml(stu.id) + '" aria-label="Delete ' + escHtml(stu.name) + '">Delete</button>' +
+            '</div>' +
+          '</div>';
         }).join('') +
         '</div>' +
       '</section>';
     }).join('');
 
-    container.querySelectorAll('.student-card').forEach(function (card) {
-      card.addEventListener('click', function () { showStudentDetail(card.dataset.uid); });
+    container.querySelectorAll('.student-card__main').forEach(function (main) {
+      var card = main.closest('.student-card');
+      function open() { showStudentDetail(card.dataset.uid); }
+      main.addEventListener('click', open);
+      main.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+      });
+    });
+
+    container.querySelectorAll('.stu-edit-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        openStudentEditModal(btn.dataset.uid);
+      });
+    });
+
+    container.querySelectorAll('.stu-del-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var uid  = btn.dataset.uid;
+        var user = auth.getUserById(uid);
+        if (!user) return;
+        openConfirm('Delete student "' + user.name + '"? This cannot be undone.', function () {
+          deleteStudent(uid);
+        });
+      });
     });
   }
 
+  function deleteStudent(uid) {
+    var users = storage.loadUsers().filter(function (u) { return u.id !== uid; });
+    storage.saveUsers(users);
+    /* Also remove their notes and progress */
+    var notes = storage.loadNotes().filter(function (n) { return n.userId !== uid; });
+    storage.saveNotes(notes);
+    toast('Student removed.');
+    refreshStudents();
+    announce('Student deleted.');
+  }
+
   function showStudentDetail(uid) {
-    var allRecs    = storage.loadRecords();
-    var allNotes   = storage.loadNotes ? storage.loadNotes() : [];
+    var allRecs     = storage.loadRecords();
+    var allNotes    = storage.loadNotes ? storage.loadNotes() : [];
     var allProgress = storage.loadProgress ? storage.loadProgress() : [];
-    var user       = auth.getUserById(uid);
+    var user        = auth.getUserById(uid);
     if (!user) return;
 
     selectedStudentId = uid;
     var stuRecs  = allRecs.filter(function (r) { return r.userId === uid; });
     var done     = stuRecs.filter(function (r) { return r.status === 'finished'; });
     var reading  = stuRecs.filter(function (r) { return r.status === 'reading'; });
-
-    /* All facilitator-uploaded books for progress display */
     var facBooks = allRecs.filter(function (r) { return r.addedByFacilitator && r.approved; });
 
-    /* Render detail card */
     var detailContent = el('student-detail-content');
     if (detailContent) {
       detailContent.innerHTML =
@@ -523,7 +444,7 @@
           '<div>' +
             '<div class="student-detail__name">' + escHtml(user.name) + '</div>' +
             '<div class="student-detail__class">' + escHtml(user.class || '') + (user.email ? ' · ' + escHtml(user.email) : '') + '</div>' +
-            (user.mission ? '<div class="student-detail__mission"><strong>Mission:</strong> ' + escHtml(user.mission) + '</div>' : '') +
+            (user.mission ? '<div class="student-detail__mission"><strong>Study Focus:</strong> ' + escHtml(user.mission) + '</div>' : '') +
             (user.missionDesc ? '<div class="student-detail__mission" style="font-style:italic;margin-top:.25rem">' + escHtml(user.missionDesc) + '</div>' : '') +
           '</div>' +
         '</div>' +
@@ -534,7 +455,6 @@
         '</div>';
     }
 
-    /* Render their books table with progress + notes */
     var tbody = el('stu-books-body');
     if (tbody) {
       tbody.innerHTML = stuRecs.length === 0
@@ -550,11 +470,9 @@
         }).join('');
     }
 
-    /* Reading progress section for facilitator-uploaded books */
     var progSection = el('stu-reading-progress');
     if (progSection) {
       var progEntries = allProgress.filter(function (p) { return p.userId === uid; });
-
       if (facBooks.length === 0) {
         progSection.innerHTML = '<p style="color:var(--muted);font-size:.875rem">No facilitator books available yet.</p>';
       } else {
@@ -578,14 +496,12 @@
       }
     }
 
-    /* Notes per book */
     var notesSection = el('stu-book-notes');
     if (notesSection) {
       var stuNotes = allNotes.filter(function (n) { return n.userId === uid; });
       if (stuNotes.length === 0) {
         notesSection.innerHTML = '<p style="color:var(--muted);font-size:.875rem">This student has not added any notes yet.</p>';
       } else {
-        /* Group notes by bookId */
         var notesByBook = {};
         stuNotes.forEach(function (n) {
           if (!notesByBook[n.bookId]) notesByBook[n.bookId] = [];
@@ -594,10 +510,9 @@
         notesSection.innerHTML = Object.keys(notesByBook).map(function (bookId) {
           var book = allRecs.find(function (r) { return r.id === bookId; });
           var bookTitle = book ? book.title : 'Unknown Book';
-          var notes = notesByBook[bookId];
           return '<div style="margin-bottom:1.25rem">' +
             '<h4 style="font-family:var(--font-serif);font-size:.95rem;color:var(--primary);margin-bottom:.5rem">' + escHtml(bookTitle) + '</h4>' +
-            notes.map(function (n) {
+            notesByBook[bookId].map(function (n) {
               return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.6rem .8rem;margin-bottom:.4rem;font-size:.85rem">' +
                 '<p style="margin:0 0 .3rem">' + escHtml(n.content || n.text || n.note || '') + '</p>' +
                 (n.page ? '<span style="font-size:.75rem;color:var(--muted)">Page ' + escHtml(String(n.page)) + '</span>' : '') +
@@ -613,16 +528,68 @@
     el('student-back-btn').focus();
   }
 
-  var studentBackBtn = el('student-back-btn');
-  if (studentBackBtn) {
-    studentBackBtn.addEventListener('click', function () {
-      el('student-detail').hidden = true;
-      selectedStudentId = null;
-    });
+  el('student-back-btn') && el('student-back-btn').addEventListener('click', function () {
+    el('student-detail').hidden = true;
+    selectedStudentId = null;
+  });
+
+  /* ── Student Edit Modal ──────────────────────────────────────── */
+  var studentEditModal = el('student-edit-modal');
+
+  function openStudentEditModal(uid) {
+    var user = auth.getUserById(uid);
+    if (!user || !studentEditModal) return;
+    el('se-id').value      = uid;
+    el('se-name').value    = user.name  || '';
+    el('se-class').value   = user.class || '';
+    el('se-mission').value = user.mission || '';
+    el('se-bio').value     = user.bio   || '';
+    var err = el('student-edit-err');
+    if (err) err.textContent = '';
+    var nameErr = el('se-name-err');
+    if (nameErr) nameErr.textContent = '';
+    el('student-edit-title').textContent = 'Edit Student — ' + user.name;
+    studentEditModal.hidden = false;
+    el('se-name').focus();
+    document.body.style.overflow = 'hidden';
   }
 
+  function closeStudentEditModal() {
+    if (studentEditModal) studentEditModal.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  el('student-edit-close')  && el('student-edit-close').addEventListener('click',  closeStudentEditModal);
+  el('student-edit-cancel') && el('student-edit-cancel').addEventListener('click', closeStudentEditModal);
+  if (studentEditModal) studentEditModal.addEventListener('click', function (e) { if (e.target === studentEditModal) closeStudentEditModal(); });
+
+  el('student-edit-form') && el('student-edit-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var uid  = el('se-id').value;
+    var name = el('se-name').value.trim();
+    var nameErr = el('se-name-err');
+    if (!name) { if (nameErr) nameErr.textContent = 'Name is required.'; return; }
+    if (nameErr) nameErr.textContent = '';
+
+    var users = storage.loadUsers();
+    var idx   = users.findIndex(function (u) { return u.id === uid; });
+    if (idx === -1) { toast('Student not found.', 'error'); return; }
+
+    users[idx].name      = name;
+    users[idx].class     = el('se-class').value   || users[idx].class   || '';
+    users[idx].mission   = el('se-mission').value.trim() || '';
+    users[idx].bio       = el('se-bio').value.trim()     || '';
+    users[idx].updatedAt = new Date().toISOString();
+    storage.saveUsers(users);
+
+    toast('Student "' + name + '" updated.');
+    closeStudentEditModal();
+    refreshStudents();
+    announce('Student updated.');
+  });
+
   /* ── Class Library page ──────────────────────────────────────── */
-  var adminQuery = '', adminStatus = '', adminTag = '', adminSort = 'dateAdded-desc';
+  var adminQuery = '', adminTag = '', adminSort = 'dateAdded-desc';
 
   function refreshAdminLibrary() {
     populateAdminTagFilter();
@@ -630,7 +597,7 @@
   }
 
   function populateAdminTagFilter() {
-    var sel  = el('admin-filter-tag');
+    var sel = el('admin-filter-tag');
     if (!sel) return;
     var tags = {};
     storage.loadRecords().forEach(function (r) { if (r.tag) tags[r.tag] = true; });
@@ -646,10 +613,9 @@
 
   function renderAdminTable() {
     var allRecs = storage.loadRecords();
-    var users   = storage.loadUsers();
     var result  = search.filterAndSort(allRecs, {
       query: adminQuery, caseInsensitive: true,
-      status: adminStatus, tag: adminTag, sortBy: adminSort
+      tag: adminTag, sortBy: adminSort
     });
 
     var tbody   = el('admin-records-body');
@@ -662,7 +628,7 @@
         hintEl.textContent = 'Regex error'; hintEl.style.color = 'var(--red)';
       } else if (adminQuery && result.re) {
         hintEl.textContent = result.filtered.length + ' match' + (result.filtered.length !== 1 ? 'es' : '');
-        hintEl.style.color = 'var(--green)';
+        hintEl.style.color = 'var(--primary-light)';
       } else { hintEl.textContent = ''; }
     }
 
@@ -671,17 +637,18 @@
     if (!tbody)  return;
 
     tbody.innerHTML = result.filtered.map(function (r) {
-      var user  = users.find(function (u) { return u.id === r.userId; }) || {};
       var title = validators.highlight(r.title, result.re);
+      var srcLabel = r.addedByFacilitator ? '<span style="font-size:.7rem;color:var(--primary);font-weight:600">FAC</span>' : '';
       return '<tr>' +
-        '<td class="col-spine"><div class="spine-dot spine-dot--' + escHtml(r.status) + '"></div></td>' +
-        '<td>' + title + '</td>' +
+        '<td class="col-spine"><div class="spine-dot spine-dot--' + escHtml(r.status || 'want') + '"></div></td>' +
+        '<td>' + title + ' ' + srcLabel + '</td>' +
         '<td>' + escHtml(r.author) + '</td>' +
-        '<td>' + escHtml(user.name || 'Unknown') + '</td>' +
-        '<td><span class="status-badge status-badge--' + escHtml(r.status) + '">' + escHtml(STATUS_LABEL[r.status] || r.status) + '</span></td>' +
+        '<td><span class="book-card__tag" style="font-size:.7rem;padding:.2rem .5rem">' + escHtml(r.tag || '') + '</span></td>' +
         '<td style="text-align:center">' + (r.recommended ? '★' : '') + '</td>' +
-        '<td>' +
+        '<td class="admin-actions-cell">' +
           '<button class="btn btn--xs btn--ghost admin-view-btn" data-id="' + escHtml(r.id) + '" aria-label="View ' + escHtml(r.title) + '">View</button>' +
+          '<button class="btn btn--xs btn--outline admin-edit-btn" data-id="' + escHtml(r.id) + '" aria-label="Edit ' + escHtml(r.title) + '">Edit</button>' +
+          '<button class="btn btn--xs btn--danger admin-del-btn" data-id="' + escHtml(r.id) + '" aria-label="Delete ' + escHtml(r.title) + '">Delete</button>' +
         '</td>' +
       '</tr>';
     }).join('');
@@ -692,6 +659,35 @@
         if (rec) openViewModal(rec);
       });
     });
+
+    tbody.querySelectorAll('.admin-edit-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var rec = storage.loadRecords().find(function (r) { return r.id === btn.dataset.id; });
+        if (rec) openBookFormModal(rec);
+      });
+    });
+
+    tbody.querySelectorAll('.admin-del-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id  = btn.dataset.id;
+        var rec = storage.loadRecords().find(function (r) { return r.id === id; });
+        if (!rec) return;
+        openConfirm('Delete "' + rec.title + '"? This cannot be undone.', function () {
+          deleteBook(id);
+        });
+      });
+    });
+  }
+
+  function deleteBook(id) {
+    var recs = storage.loadRecords().filter(function (r) { return r.id !== id; });
+    storage.saveRecords(recs);
+    /* Remove progress entries for this book */
+    var progress = (storage.loadProgress ? storage.loadProgress() : []).filter(function (p) { return p.bookId !== id; });
+    if (storage.saveProgress) storage.saveProgress(progress);
+    toast('Book deleted.');
+    renderAdminTable();
+    announce('Book deleted.');
   }
 
   /* Admin library filters */
@@ -703,8 +699,6 @@
       adminDebounce = setTimeout(function () { adminQuery = adminSearchEl.value; renderAdminTable(); }, 220);
     });
   }
-  var adminFilterStatus = el('admin-filter-status');
-  if (adminFilterStatus) adminFilterStatus.addEventListener('change', function () { adminStatus = adminFilterStatus.value; renderAdminTable(); });
   var adminFilterTag = el('admin-filter-tag');
   if (adminFilterTag) adminFilterTag.addEventListener('change', function () { adminTag = adminFilterTag.value; renderAdminTable(); });
   var adminSortEl = el('admin-sort');
@@ -712,30 +706,31 @@
   var adminClearBtn = el('admin-clear-filters');
   if (adminClearBtn) {
     adminClearBtn.addEventListener('click', function () {
-      adminQuery = ''; adminStatus = ''; adminTag = ''; adminSort = 'dateAdded-desc';
+      adminQuery = ''; adminTag = ''; adminSort = 'dateAdded-desc';
       if (adminSearchEl) adminSearchEl.value = '';
-      if (adminFilterStatus) adminFilterStatus.value = '';
       if (adminFilterTag) adminFilterTag.value = '';
       if (adminSortEl) adminSortEl.value = 'dateAdded-desc';
       renderAdminTable();
     });
   }
 
+  /* Add Book button */
+  el('add-book-btn') && el('add-book-btn').addEventListener('click', function () {
+    openBookFormModal(null);
+  });
+
   /* Admin export/import JSON */
-  var adminExportBtn = el('admin-export-btn');
-  if (adminExportBtn) {
-    adminExportBtn.addEventListener('click', function () {
-      var recs = storage.loadRecords();
-      var blob = new Blob([JSON.stringify(recs, null, 2)], { type: 'application/json' });
-      var url  = URL.createObjectURL(blob);
-      var a    = document.createElement('a');
-      a.href = url;
-      a.download = 'all-records-' + new Date().toISOString().slice(0, 10) + '.json';
-      a.click();
-      URL.revokeObjectURL(url);
-      toast('Exported ' + recs.length + ' records.');
-    });
-  }
+  el('admin-export-btn') && el('admin-export-btn').addEventListener('click', function () {
+    var recs = storage.loadRecords();
+    var blob = new Blob([JSON.stringify(recs, null, 2)], { type: 'application/json' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href = url;
+    a.download = 'alusource-library-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('Exported ' + recs.length + ' records.');
+  });
 
   var adminImportFile = el('admin-import-file');
   if (adminImportFile) {
@@ -760,6 +755,145 @@
       reader.readAsText(file);
     });
   }
+
+  /* ── Book Form Modal (Add / Edit) ────────────────────────────── */
+  var bookFormModal = el('book-form-modal');
+
+  function openBookFormModal(rec) {
+    if (!bookFormModal) return;
+    var isEdit = !!rec;
+    el('book-form-title').textContent = isEdit ? 'Edit Book — ' + rec.title : 'Add Book';
+    el('book-form-submit').textContent = isEdit ? 'Save Changes' : 'Publish Book';
+    el('bf-id').value      = isEdit ? rec.id          : '';
+    el('bf-title').value   = isEdit ? (rec.title  || '') : '';
+    el('bf-author').value  = isEdit ? (rec.author || '') : '';
+    el('bf-pages').value   = isEdit ? (rec.pages  || '') : '';
+    el('bf-tag').value     = isEdit ? (rec.tag    || '') : '';
+    el('bf-summary').value = isEdit ? (rec.description || '') : '';
+    el('bf-cover').value   = isEdit ? (rec.coverUrl || '') : '';
+    el('bf-pdf').value     = isEdit ? (rec.pdfUrl  || '') : '';
+    el('bf-isbn').value    = isEdit ? (rec.isbn    || '') : '';
+    el('bf-recommended').checked = isEdit ? !!rec.recommended : false;
+
+    /* Cover preview */
+    var prevEl = el('bf-cover-preview');
+    var imgEl  = el('bf-cover-img');
+    if (prevEl && imgEl) {
+      if (rec && rec.coverUrl) {
+        imgEl.src = rec.coverUrl;
+        prevEl.style.display = 'block';
+      } else {
+        prevEl.style.display = 'none';
+      }
+    }
+
+    /* Clear errors */
+    ['bf-title-err','bf-author-err','bf-pages-err','bf-tag-err','bf-summary-err','book-form-err'].forEach(function (id) {
+      var e = el(id); if (e) e.textContent = '';
+    });
+
+    bookFormModal.hidden = false;
+    el('bf-title').focus();
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeBookFormModal() {
+    if (bookFormModal) bookFormModal.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  el('book-form-close')  && el('book-form-close').addEventListener('click',  closeBookFormModal);
+  el('book-form-cancel') && el('book-form-cancel').addEventListener('click', closeBookFormModal);
+  if (bookFormModal) bookFormModal.addEventListener('click', function (e) { if (e.target === bookFormModal) closeBookFormModal(); });
+
+  /* Live cover preview inside book form modal */
+  el('bf-cover') && el('bf-cover').addEventListener('input', function () {
+    var url = el('bf-cover').value.trim();
+    var prevEl = el('bf-cover-preview');
+    var imgEl  = el('bf-cover-img');
+    if (url && prevEl && imgEl) {
+      imgEl.src = url;
+      prevEl.style.display = 'block';
+    } else if (prevEl) {
+      prevEl.style.display = 'none';
+    }
+  });
+
+  el('book-form') && el('book-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var valid = true;
+
+    function fieldErr(errId, msg) {
+      var err = el(errId); if (err) err.textContent = msg;
+      valid = false;
+    }
+
+    var titleVal   = el('bf-title').value.trim();
+    var authorVal  = el('bf-author').value.trim();
+    var pagesVal   = parseInt(el('bf-pages').value, 10);
+    var tagVal     = el('bf-tag').value.trim();
+    var summaryVal = el('bf-summary').value.trim();
+
+    if (!titleVal)                            fieldErr('bf-title-err',   'Title is required.');
+    if (!authorVal)                           fieldErr('bf-author-err',  'Author is required.');
+    if (!el('bf-pages').value.trim() || isNaN(pagesVal) || pagesVal < 1)
+                                              fieldErr('bf-pages-err',   'Enter a valid page count.');
+    if (!tagVal)                              fieldErr('bf-tag-err',     'Topic / Tag is required.');
+    if (!summaryVal)                          fieldErr('bf-summary-err', 'Summary is required.');
+    if (!valid) return;
+
+    var existingId = el('bf-id').value;
+    var recs = storage.loadRecords();
+
+    if (existingId) {
+      /* Edit existing */
+      var idx = recs.findIndex(function (r) { return r.id === existingId; });
+      if (idx === -1) { toast('Book not found.', 'error'); return; }
+      recs[idx].title       = titleVal;
+      recs[idx].author      = authorVal;
+      recs[idx].pages       = pagesVal;
+      recs[idx].tag         = tagVal;
+      recs[idx].description = summaryVal;
+      recs[idx].coverUrl    = el('bf-cover').value.trim() || recs[idx].coverUrl || '';
+      recs[idx].coverColor  = TAG_COLORS[tagVal] || recs[idx].coverColor || randomColor();
+      recs[idx].pdfUrl      = el('bf-pdf').value.trim() || '';
+      recs[idx].isbn        = el('bf-isbn').value.trim() || '';
+      recs[idx].recommended = el('bf-recommended').checked;
+      recs[idx].updatedAt   = new Date().toISOString();
+      storage.saveRecords(recs);
+      toast('"' + titleVal + '" updated.');
+    } else {
+      /* Add new */
+      var newRec = {
+        id:                 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+        userId:             userId,
+        title:              titleVal,
+        author:             authorVal,
+        pages:              pagesVal,
+        tag:                tagVal,
+        description:        summaryVal,
+        coverUrl:           el('bf-cover').value.trim() || '',
+        coverColor:         TAG_COLORS[tagVal] || randomColor(),
+        pdfUrl:             el('bf-pdf').value.trim() || '',
+        isbn:               el('bf-isbn').value.trim() || '',
+        recommended:        el('bf-recommended').checked,
+        status:             'finished',
+        approved:           true,
+        approvedBy:         userId,
+        approvedAt:         new Date().toISOString(),
+        addedByFacilitator: true,
+        dateAdded:          new Date().toISOString().slice(0, 10),
+        notes:              ''
+      };
+      recs.push(newRec);
+      storage.saveRecords(recs);
+      toast('"' + titleVal + '" published to the catalog.');
+    }
+
+    closeBookFormModal();
+    renderAdminTable();
+    announce((existingId ? 'Book updated: ' : 'Book added: ') + titleVal);
+  });
 
   /* ── Reports page ────────────────────────────────────────────── */
   function refreshReports() {
@@ -787,7 +921,7 @@
   function renderCompletionChart(recs) {
     var chartEl = el('completion-chart');
     if (!chartEl) return;
-    var days = search.computeCompletionsByDay(recs, 30);
+    var days   = search.computeCompletionsByDay(recs, 30);
     var maxVal = Math.max.apply(null, days.map(function (d) { return d.count; })) || 1;
     chartEl.innerHTML = days.map(function (d) {
       var pct = Math.max(d.count > 0 ? 8 : 1, Math.round((d.count / maxVal) * 100));
@@ -800,42 +934,31 @@
     }).join('');
   }
 
-  /* CSV export */
-  var exportCsvBtn = el('export-csv-btn');
-  if (exportCsvBtn) {
-    exportCsvBtn.addEventListener('click', function () {
-      var recs  = storage.loadRecords();
-      var users = storage.loadUsers();
-
-      function csvField(v) {
-        var s = String(v == null ? '' : v);
-        if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-        return s;
-      }
-
-      var header  = ['id','title','author','pages','status','tag','dateAdded','recommended','studentName','studentEmail','class'];
-      var rows    = [header.map(csvField).join(',')];
-
-      recs.forEach(function (r) {
-        var user = users.find(function (u) { return u.id === r.userId; }) || {};
-        rows.push([
-          r.id, r.title, r.author, r.pages, r.status, r.tag,
-          r.dateAdded, r.recommended ? '1' : '0',
-          user.name || '', user.email || '', user.class || ''
-        ].map(csvField).join(','));
-      });
-
-      var csv  = rows.join('\r\n');
-      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      var url  = URL.createObjectURL(blob);
-      var a    = document.createElement('a');
-      a.href = url;
-      a.download = 'alu-library-report-' + new Date().toISOString().slice(0, 10) + '.csv';
-      a.click();
-      URL.revokeObjectURL(url);
-      toast('CSV exported (' + recs.length + ' records).');
+  el('export-csv-btn') && el('export-csv-btn').addEventListener('click', function () {
+    var recs  = storage.loadRecords();
+    var users = storage.loadUsers();
+    function csvField(v) {
+      var s = String(v == null ? '' : v);
+      if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    }
+    var header = ['id','title','author','pages','status','tag','dateAdded','recommended','pdfUrl','studentName','studentEmail','class'];
+    var rows   = [header.map(csvField).join(',')];
+    recs.forEach(function (r) {
+      var user = users.find(function (u) { return u.id === r.userId; }) || {};
+      rows.push([r.id, r.title, r.author, r.pages, r.status, r.tag, r.dateAdded,
+        r.recommended ? '1' : '0', r.pdfUrl || '', user.name || '', user.email || '', user.class || ''
+      ].map(csvField).join(','));
     });
-  }
+    var blob = new Blob([rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href = url;
+    a.download = 'alusource-report-' + new Date().toISOString().slice(0, 10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('CSV exported (' + recs.length + ' records).');
+  });
 
   /* ── Recommended page ────────────────────────────────────────── */
   function refreshRecommended() {
@@ -853,12 +976,11 @@
       return;
     }
     shelfEl.innerHTML = recRecs.slice(0, 20).map(function (r) {
-      return '<button class="book-spine book-spine--' + escHtml(r.status) + '" data-id="' + escHtml(r.id) + '"' +
+      return '<button class="book-spine book-spine--' + escHtml(r.status || 'want') + '" data-id="' + escHtml(r.id) + '"' +
         ' title="' + escHtml(r.title) + '" aria-label="' + escHtml(r.title) + '">' +
         '<span class="book-spine__title">' + escHtml(r.title) + '</span>' +
       '</button>';
     }).join('');
-
     shelfEl.querySelectorAll('.book-spine').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var rec = storage.loadRecords().find(function (r) { return r.id === btn.dataset.id; });
@@ -870,7 +992,6 @@
   function renderRecTable(recs) {
     var tbody = el('rec-table-body');
     if (!tbody) return;
-
     tbody.innerHTML = recs.map(function (r) {
       return '<tr data-id="' + escHtml(r.id) + '">' +
         '<td>' + escHtml(r.title) + '</td>' +
@@ -878,12 +999,9 @@
         '<td>' + escHtml(r.tag) + '</td>' +
         '<td style="text-align:center">' +
           '<input type="checkbox" class="rec-checkbox" data-id="' + escHtml(r.id) + '"' +
-          (r.recommended ? ' checked' : '') +
-          ' aria-label="Recommend ' + escHtml(r.title) + '" />' +
+          (r.recommended ? ' checked' : '') + ' aria-label="Recommend ' + escHtml(r.title) + '" />' +
         '</td>' +
-        '<td>' +
-          '<button class="btn btn--xs btn--ghost rec-view-btn" data-id="' + escHtml(r.id) + '" aria-label="View ' + escHtml(r.title) + '">View</button>' +
-        '</td>' +
+        '<td><button class="btn btn--xs btn--ghost rec-view-btn" data-id="' + escHtml(r.id) + '">View</button></td>' +
       '</tr>';
     }).join('');
 
@@ -916,19 +1034,18 @@
     if (!viewModal) return;
     function set(id, v) { var e = el(id); if (e) e.textContent = v; }
     set('view-modal-title', rec.title);
-    set('view-author',      rec.author || '—');
-    set('view-pages',       (rec.pages || '?') + ' pages');
-    set('view-tag',         rec.tag    || '');
+    set('view-author',      rec.author  || '—');
+    set('view-pages',       (rec.pages  || '?') + ' pages');
+    set('view-tag',         rec.tag     || '');
     set('view-date',        rec.dateAdded || '');
 
     var spineEl  = el('view-spine');
-    if (spineEl)  spineEl.className  = 'view-modal__spine view-modal__spine--' + (rec.status || 'want');
+    if (spineEl) spineEl.className = 'view-modal__spine view-modal__spine--' + (rec.status || 'want');
     var statusEl = el('view-status');
     if (statusEl) {
-      statusEl.textContent = STATUS_LABEL[rec.status] || rec.status;
+      statusEl.textContent = STATUS_LABEL[rec.status] || rec.status || '';
       statusEl.className   = 'view-modal__status status-badge status-badge--' + (rec.status || 'want');
     }
-
     var notesSec = el('view-notes');
     if (rec.notes && rec.notes.trim()) {
       if (notesSec) notesSec.hidden = false;
@@ -936,9 +1053,8 @@
     } else {
       if (notesSec) notesSec.hidden = true;
     }
-
     viewModal.hidden = false;
-    el('view-modal-close').focus();
+    el('view-modal-close') && el('view-modal-close').focus();
     document.body.style.overflow = 'hidden';
   }
 
@@ -948,7 +1064,7 @@
   }
 
   el('view-modal-close') && el('view-modal-close').addEventListener('click', closeViewModal);
-  el('view-close-btn')   && el('view-close-btn').addEventListener('click', closeViewModal);
+  el('view-close-btn')   && el('view-close-btn').addEventListener('click',   closeViewModal);
   if (viewModal) viewModal.addEventListener('click', function (e) { if (e.target === viewModal) closeViewModal(); });
 
   /* ── Confirm Modal ───────────────────────────────────────────── */
@@ -960,7 +1076,7 @@
     el('confirm-body').textContent = msg;
     confirmCb = onYes;
     confirmOverlay.hidden = false;
-    el('confirm-yes').focus();
+    el('confirm-yes') && el('confirm-yes').focus();
     document.body.style.overflow = 'hidden';
   }
 
@@ -977,9 +1093,11 @@
   /* ── Global Escape ───────────────────────────────────────────── */
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
-    if (rejectModal    && !rejectModal.hidden)    { closeRejectModal(); return; }
-    if (viewModal      && !viewModal.hidden)      { closeViewModal();   return; }
-    if (confirmOverlay && !confirmOverlay.hidden) { closeConfirm();     return; }
+    if (bookFormModal     && !bookFormModal.hidden)     { closeBookFormModal();     return; }
+    if (studentEditModal  && !studentEditModal.hidden)  { closeStudentEditModal();  return; }
+    if (rejectModal       && !rejectModal.hidden)       { closeRejectModal();       return; }
+    if (viewModal         && !viewModal.hidden)         { closeViewModal();         return; }
+    if (confirmOverlay    && !confirmOverlay.hidden)    { closeConfirm();           return; }
   });
 
   /* ── Initial render ──────────────────────────────────────────── */

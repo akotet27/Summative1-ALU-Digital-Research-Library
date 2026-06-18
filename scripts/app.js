@@ -321,9 +321,25 @@
       metaEl.innerHTML = meta.join('');
     }
 
-    /* Point the CTA link so after login the student lands on the reader */
+    /* Modal CTA — changes based on whether the user is logged in */
     var ctaEl = document.getElementById('book-modal-cta');
-    if (ctaEl) ctaEl.href = 'login.html?book=' + encodeURIComponent(rec.id);
+    if (ctaEl) {
+      if (session) {
+        if (rec.pdfUrl) {
+          ctaEl.textContent = 'Read Now';
+          ctaEl.href = 'dashboard.html?book=' + encodeURIComponent(rec.id);
+          ctaEl.className = 'btn btn--primary';
+        } else {
+          ctaEl.textContent = 'Go to Dashboard';
+          ctaEl.href = 'dashboard.html';
+          ctaEl.className = 'btn btn--outline';
+        }
+      } else {
+        ctaEl.textContent = 'Sign in to read this book';
+        ctaEl.href = 'login.html?book=' + encodeURIComponent(rec.id);
+        ctaEl.className = 'btn btn--primary';
+      }
+    }
 
     bookModal.hidden = false;
     var closeBtn = document.getElementById('book-modal-close');
