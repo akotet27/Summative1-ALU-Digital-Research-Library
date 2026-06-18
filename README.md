@@ -1,7 +1,8 @@
 # ALUSOURCE — Digital Library Platform
 
 **A project by Akotet Demise**
-**Repo:** https://github.com/akotet27/Summative-1-ALU-library.git
+**Repo:** https://github.com/akotet27/Summative1-ALU-Digital-Research-Library
+**Live:** https://akotet27.github.io/Summative1-ALU-Digital-Research-Library/
 
 A role-based digital library web application for ALU students and facilitators. Facilitators manage a curated book catalog; students browse, read, and annotate books — no build step, no server required.
 
