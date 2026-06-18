@@ -139,11 +139,12 @@
         if (finished >= goal) {
           capMsg.textContent = 'Goal reached! You finished ' + finished + ' resource' + (finished !== 1 ? 's' : '') + '.';
           capMsg.className   = 'cap-message cap-message--success';
-          announce('Reading goal reached!');
+          announce('Goal reached! You have finished ' + finished + ' of ' + goal + ' resources.', true);
         } else {
           var left = goal - finished;
           capMsg.textContent = left + ' more resource' + (left !== 1 ? 's' : '') + ' to reach your goal of ' + goal + '.';
           capMsg.className   = 'cap-message';
+          announce(left + ' resource' + (left !== 1 ? 's' : '') + ' remaining to reach your goal of ' + goal + '.');
         }
       }
     } else {
