@@ -125,32 +125,38 @@
 
   /* ── Overview page ───────────────────────────────────────────── */
   function refreshOverview() {
-    var allRecs  = storage.loadRecords();
-    var allNotes = storage.loadNotes();
-    var users    = storage.loadUsers();
-    var students = users.filter(function (u) { return u.role === 'student'; });
+    var allRecs   = storage.loadRecords();
+    var allNotes  = storage.loadNotes();
+    var allProgress = storage.loadProgress ? storage.loadProgress() : [];
+    var users     = storage.loadUsers();
+    var students  = users.filter(function (u) { return u.role === 'student'; });
 
-    var finished = allRecs.filter(function (r) { return r.status === 'finished'; });
-    var rec      = allRecs.filter(function (r) { return r.recommended; });
+    /* Catalog books = facilitator-approved (matches homepage + dashboard count) */
+    var facBooks  = allRecs.filter(function (r) { return r.addedByFacilitator && r.approved; });
+    var rec       = facBooks.filter(function (r) { return r.recommended; });
 
-    var avgPages = finished.length > 0
-      ? Math.round(finished.reduce(function (s, r) { return s + (Number(r.pages) || 0); }, 0) / finished.length)
+    /* Average pages of catalog books */
+    var avgPages = facBooks.length > 0
+      ? Math.round(facBooks.reduce(function (s, r) { return s + (Number(r.pages) || 0); }, 0) / facBooks.length)
       : 0;
 
+    /* Top tag across catalog */
     var tagCounts = {};
-    allRecs.forEach(function (r) { if (r.tag) tagCounts[r.tag] = (tagCounts[r.tag] || 0) + 1; });
+    facBooks.forEach(function (r) { if (r.tag) tagCounts[r.tag] = (tagCounts[r.tag] || 0) + 1; });
     var topTag = Object.keys(tagCounts).sort(function (a, b) { return tagCounts[b] - tagCounts[a]; })[0] || '—';
 
+    /* Notes written by students */
     var stuIds   = students.map(function (s) { return s.id; });
     var stuNotes = allNotes.filter(function (n) { return stuIds.indexOf(n.userId) !== -1; });
 
-    var activeReaders = students.filter(function (stu) {
-      return allRecs.some(function (r) { return r.userId === stu.id && r.status === 'reading'; });
-    }).length;
+    /* Student reading completions and active readers (from progress data) */
+    var stuProgress   = allProgress.filter(function (p) { return stuIds.indexOf(p.userId) !== -1; });
+    var completions   = stuProgress.filter(function (p) { return p.completed; }).length;
+    var activeReaders = stuProgress.filter(function (p) { return p.percent > 0 && !p.completed; }).length;
 
     function set(id, v) { var e = el(id); if (e) e.textContent = v; }
-    set('fac-stat-total',    allRecs.length);
-    set('fac-stat-done',     finished.length);
+    set('fac-stat-total',    facBooks.length);
+    set('fac-stat-done',     completions);
     set('fac-stat-avgpages', avgPages || '—');
     set('fac-stat-rec',      rec.length);
     set('fac-stat-students', students.length);
@@ -159,7 +165,7 @@
     set('fac-stat-active',   activeReaders);
 
     var subtitle = el('fac-subtitle');
-    if (subtitle) subtitle.textContent = students.length + ' students · ' + allRecs.length + ' resources · ' + stuNotes.length + ' notes';
+    if (subtitle) subtitle.textContent = students.length + ' students · ' + facBooks.length + ' catalog books · ' + stuNotes.length + ' notes';
 
     renderTagChart(allRecs);
     renderHealthGrid(allRecs, students);

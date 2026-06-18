@@ -30,8 +30,8 @@
     userProgress = storage.loadProgress().filter(function (p) { return p.userId === session.userId; });
   }
 
-  /* Only show facilitator-approved books on the public home page */
-  var allRecs = storage.loadRecords().filter(function (r) { return r.approved === true; });
+  /* Only show facilitator-published books — same filter as student dashboard facBooks() */
+  var allRecs = storage.loadRecords().filter(function (r) { return r.addedByFacilitator && r.approved; });
 
   /* ── Hero stats ─────────────────────────────────────────────── */
   (function buildHeroStats() {
