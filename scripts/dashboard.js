@@ -94,6 +94,7 @@
     });
     closeSidebar();
     if (page === 'dashboard') refreshDashboard();
+    if (page === 'books')     refreshBooks();
     if (page === 'library')   refreshLibrary();
     if (page === 'notes')     refreshNotes();
     if (page === 'add')       resetAddForm();
@@ -258,6 +259,310 @@
         (book ? '<span class="note-preview__book">' + escHtml(book.title) + '</span>' : '') +
       '</div>';
     }).join('');
+  }
+
+  /* ── Browse Books page ──────────────────────────────────────── */
+  var TAG_COLORS_DB = {
+    'Leadership':      '#1B4D3E', 'Entrepreneurship': '#2D6A4F',
+    'Technology':      '#0F3460', 'Innovation':       '#1A535C',
+    'Finance':         '#7B2D8B', 'Design':           '#C05621',
+    'Communication':   '#2C5282', 'Strategy':         '#744210',
+    'Ethics':          '#22543D', 'Research':         '#1A365D'
+  };
+
+  var booksListMode = false;
+  var booksTagFilter = '';
+  var booksSearchQuery = '';
+
+  function facBooks() {
+    return storage.loadRecords().filter(function (r) { return r.addedByFacilitator && r.approved; });
+  }
+
+  function refreshBooks() {
+    var books = facBooks();
+
+    /* Populate tag filter */
+    var tagSel = el('books-tag-filter');
+    if (tagSel) {
+      var curr = tagSel.value;
+      while (tagSel.options.length > 1) tagSel.remove(1);
+      var tags = {};
+      books.forEach(function (b) { if (b.tag) tags[b.tag] = true; });
+      Object.keys(tags).sort().forEach(function (t) {
+        var opt = document.createElement('option'); opt.value = t; opt.textContent = t;
+        tagSel.appendChild(opt);
+      });
+      tagSel.value = curr;
+    }
+
+    renderBooksGrid();
+  }
+
+  function renderBooksGrid() {
+    var books = facBooks();
+    var allProgress = storage.loadProgress ? storage.loadProgress() : [];
+
+    /* Filter */
+    var filtered = books.filter(function (b) {
+      var q = booksSearchQuery.toLowerCase();
+      var matchQ = !q || (b.title || '').toLowerCase().indexOf(q) !== -1 || (b.author || '').toLowerCase().indexOf(q) !== -1;
+      var matchT = !booksTagFilter || b.tag === booksTagFilter;
+      return matchQ && matchT;
+    });
+
+    var gridEl  = el('books-grid');
+    var emptyEl = el('books-empty');
+    if (!gridEl) return;
+
+    if (filtered.length === 0) {
+      gridEl.innerHTML = '';
+      if (emptyEl) emptyEl.hidden = false;
+      return;
+    }
+    if (emptyEl) emptyEl.hidden = true;
+
+    gridEl.className = 'books-grid' + (booksListMode ? ' view--list' : '');
+
+    gridEl.innerHTML = filtered.map(function (book) {
+      var prog    = allProgress.find(function (p) { return p.userId === userId && p.bookId === book.id; });
+      var pct     = prog ? Math.min(100, Math.round(prog.percent || 0)) : 0;
+      var bgColor = book.coverColor || TAG_COLORS_DB[book.tag] || '#1B4D3E';
+      var coverStyle = book.coverUrl
+        ? 'background-image:url(' + escHtml(book.coverUrl) + ');background-size:cover;background-position:center'
+        : 'background-color:' + bgColor;
+      var btnLabel = prog && prog.completed ? 'Read Again' : (prog && prog.currentPage > 0 ? 'Continue Reading' : 'Start Reading');
+      var btnClass = prog && prog.currentPage > 0 ? 'btn--primary' : 'btn--outline';
+
+      return '<div class="bk-card">' +
+        '<div class="bk-card__cover" style="' + coverStyle + '">' +
+          (book.coverUrl ? '' : '<span class="bk-card__cover-title">' + escHtml(book.title) + '</span>') +
+          (pct > 0 ? '<div class="bk-progress bk-progress--overlay"><div class="bk-progress__fill" style="width:' + pct + '%"></div></div>' : '') +
+        '</div>' +
+        '<div class="bk-card__body">' +
+          (book.tag ? '<span class="bk-card__tag">' + escHtml(book.tag) + '</span>' : '') +
+          '<h3 class="bk-card__title">' + escHtml(book.title) + '</h3>' +
+          '<p class="bk-card__author">' + escHtml(book.author || '') + '</p>' +
+          (book.description ? '<p class="bk-card__summary">' + escHtml(book.description.slice(0, 120)) + (book.description.length > 120 ? '…' : '') + '</p>' : '') +
+          '<div class="bk-card__footer">' +
+            (book.pages ? '<span class="bk-card__pages">' + book.pages + ' pages</span>' : '') +
+            (pct > 0 ? '<span class="reader-pct-badge" style="font-size:.72rem;padding:.2rem .5rem">' + pct + '%</span>' : '') +
+          '</div>' +
+          (book.pdfUrl
+            ? '<button class="btn btn--sm ' + btnClass + ' start-reading-btn" data-book-id="' + escHtml(book.id) + '" aria-label="' + btnLabel + ' ' + escHtml(book.title) + '">' + btnLabel + '</button>'
+            : '<span style="font-size:.78rem;color:var(--muted)">No PDF available</span>') +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    gridEl.querySelectorAll('.start-reading-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () { startReading(btn.dataset.bookId); });
+    });
+  }
+
+  /* Grid / List toggle */
+  var booksGridBtn = el('books-grid-btn');
+  var booksListBtn = el('books-list-btn');
+  if (booksGridBtn) {
+    booksGridBtn.addEventListener('click', function () {
+      booksListMode = false;
+      booksGridBtn.classList.add('active');    booksGridBtn.setAttribute('aria-pressed', 'true');
+      if (booksListBtn) { booksListBtn.classList.remove('active'); booksListBtn.setAttribute('aria-pressed', 'false'); }
+      renderBooksGrid();
+    });
+  }
+  if (booksListBtn) {
+    booksListBtn.addEventListener('click', function () {
+      booksListMode = true;
+      booksListBtn.classList.add('active');    booksListBtn.setAttribute('aria-pressed', 'true');
+      if (booksGridBtn) { booksGridBtn.classList.remove('active'); booksGridBtn.setAttribute('aria-pressed', 'false'); }
+      renderBooksGrid();
+    });
+  }
+
+  /* Books search + filter */
+  var booksSearchEl = el('books-search');
+  if (booksSearchEl) {
+    booksSearchEl.addEventListener('input', function () {
+      booksSearchQuery = booksSearchEl.value;
+      renderBooksGrid();
+    });
+  }
+  var booksTagFilterEl = el('books-tag-filter');
+  if (booksTagFilterEl) {
+    booksTagFilterEl.addEventListener('change', function () {
+      booksTagFilter = booksTagFilterEl.value;
+      renderBooksGrid();
+    });
+  }
+
+  /* ── PDF Reader ──────────────────────────────────────────────── */
+  var pdfDoc       = null;
+  var pdfPageNum   = 1;
+  var pdfRendering = false;
+  var pdfPending   = null;
+  var currentBookId = null;
+
+  var PDF_JS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+
+  function ensurePdfJs(cb) {
+    if (window.pdfjsLib) { cb(); return; }
+    var script = document.createElement('script');
+    script.src = PDF_JS_URL;
+    script.onload = function () {
+      if (window.pdfjsLib) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+      cb();
+    };
+    script.onerror = function () { cb(new Error('Failed to load PDF.js')); };
+    document.head.appendChild(script);
+  }
+
+  function startReading(bookId) {
+    var book = storage.loadRecords().find(function (r) { return r.id === bookId; });
+    if (!book) return;
+
+    currentBookId = bookId;
+    pdfDoc      = null;
+    pdfPageNum  = 1;
+
+    /* Navigate to reader page */
+    navigateTo('reader');
+
+    /* Set header */
+    var heading = el('reader-heading');
+    if (heading) heading.textContent = book.title;
+    var pctBadge = el('reader-pct-badge');
+    if (pctBadge) pctBadge.textContent = '0%';
+
+    /* Show loading, hide canvas/iframe */
+    var loadingEl = el('reader-loading');
+    var canvasEl  = el('pdf-canvas');
+    var iframeEl  = el('reader-iframe');
+    var footerEl  = el('reader-footer');
+    if (loadingEl) loadingEl.style.display = 'flex';
+    if (canvasEl)  canvasEl.style.display  = 'none';
+    if (iframeEl)  iframeEl.style.display  = 'none';
+    if (footerEl)  footerEl.style.display  = 'none';
+
+    /* Restore last page */
+    var prog = storage.getProgress ? storage.getProgress(userId, bookId) : null;
+    if (prog && prog.currentPage > 0) pdfPageNum = prog.currentPage;
+
+    if (!book.pdfUrl) {
+      if (loadingEl) loadingEl.innerHTML = '<p style="color:var(--muted)">No PDF URL provided for this book.</p>';
+      return;
+    }
+
+    ensurePdfJs(function (loadErr) {
+      if (loadErr || !window.pdfjsLib) {
+        /* Fallback to iframe */
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (iframeEl) { iframeEl.src = book.pdfUrl; iframeEl.style.display = 'block'; }
+        if (footerEl) footerEl.style.display = 'none';
+        return;
+      }
+
+      window.pdfjsLib.getDocument(book.pdfUrl).promise.then(function (doc) {
+        pdfDoc = doc;
+        var totalPages = doc.numPages;
+
+        /* Update progress entry totalPages */
+        if (storage.updateProgress) storage.updateProgress(userId, bookId, pdfPageNum, totalPages);
+
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (footerEl)  footerEl.style.display  = 'flex';
+
+        renderPdfPage(pdfPageNum);
+      }).catch(function () {
+        /* Fallback to iframe on CORS or other error */
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (iframeEl) { iframeEl.src = book.pdfUrl; iframeEl.style.display = 'block'; }
+        if (footerEl) footerEl.style.display = 'none';
+      });
+    });
+  }
+
+  function renderPdfPage(pageNum) {
+    if (!pdfDoc) return;
+    if (pdfRendering) { pdfPending = pageNum; return; }
+    pdfRendering = true;
+
+    pdfDoc.getPage(pageNum).then(function (page) {
+      var canvasEl  = el('pdf-canvas');
+      if (!canvasEl) { pdfRendering = false; return; }
+      canvasEl.style.display = 'block';
+
+      var container = el('reader-body');
+      var viewport  = page.getViewport({ scale: 1 });
+      var maxWidth  = container ? container.clientWidth - 32 : 800;
+      var scale     = Math.min(2, maxWidth / viewport.width);
+      var scaledVP  = page.getViewport({ scale: scale });
+
+      canvasEl.width  = scaledVP.width;
+      canvasEl.height = scaledVP.height;
+
+      var ctx    = canvasEl.getContext('2d');
+      var render = page.render({ canvasContext: ctx, viewport: scaledVP });
+
+      render.promise.then(function () {
+        pdfRendering = false;
+        pdfPageNum   = pageNum;
+
+        updatePdfProgress();
+
+        if (pdfPending !== null) {
+          var next = pdfPending; pdfPending = null;
+          renderPdfPage(next);
+        }
+      });
+    }).catch(function () { pdfRendering = false; });
+  }
+
+  function updatePdfProgress() {
+    if (!pdfDoc || !currentBookId) return;
+    var totalPages = pdfDoc.numPages;
+    var pct        = Math.round((pdfPageNum / totalPages) * 100);
+
+    /* Storage */
+    if (storage.updateProgress) storage.updateProgress(userId, currentBookId, pdfPageNum, totalPages);
+
+    /* Progress bar */
+    var fill    = el('reader-progress-fill');
+    var barEl   = el('reader-progress-bar');
+    var pctEl   = el('reader-pct-badge');
+    var pageEl  = el('reader-page-info');
+    var prevBtn = el('reader-prev-btn');
+    var nextBtn = el('reader-next-btn');
+
+    if (fill)   { fill.style.width = pct + '%'; }
+    if (barEl)  { barEl.setAttribute('aria-valuenow', pct); }
+    if (pctEl)  { pctEl.textContent = pct + '%'; }
+    if (pageEl) { pageEl.textContent = 'Page ' + pdfPageNum + ' of ' + totalPages; }
+    if (prevBtn){ prevBtn.disabled = pdfPageNum <= 1; }
+    if (nextBtn){ nextBtn.disabled = pdfPageNum >= totalPages; }
+  }
+
+  /* Reader nav buttons */
+  var readerPrevBtn = el('reader-prev-btn');
+  var readerNextBtn = el('reader-next-btn');
+  var readerBackBtn = el('reader-back-btn');
+
+  if (readerPrevBtn) {
+    readerPrevBtn.addEventListener('click', function () {
+      if (pdfPageNum > 1) renderPdfPage(pdfPageNum - 1);
+    });
+  }
+  if (readerNextBtn) {
+    readerNextBtn.addEventListener('click', function () {
+      if (pdfDoc && pdfPageNum < pdfDoc.numPages) renderPdfPage(pdfPageNum + 1);
+    });
+  }
+  if (readerBackBtn) {
+    readerBackBtn.addEventListener('click', function () {
+      navigateTo('books');
+    });
   }
 
   /* ── Library page ────────────────────────────────────────────── */
@@ -967,6 +1272,23 @@
   });
 
   /* ── Initial render ──────────────────────────────────────────── */
-  refreshDashboard();
+  /* Check if redirected from homepage with a specific book to read */
+  var urlParams  = new URLSearchParams(window.location.search);
+  var bookParam  = urlParams.get('book');
+  if (bookParam) {
+    var targetBook = storage.loadRecords().find(function (r) { return r.id === bookParam && r.addedByFacilitator && r.approved; });
+    if (targetBook && targetBook.pdfUrl) {
+      /* Clean URL so refreshes don't re-trigger */
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+      startReading(bookParam);
+    } else {
+      navigateTo('books');
+      refreshBooks();
+    }
+  } else {
+    refreshDashboard();
+  }
 
 })(window.App = window.App || {});

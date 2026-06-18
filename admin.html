@@ -62,6 +62,10 @@
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
         <span>Overview</span>
       </a></li>
+      <li><a href="#" class="nav-link" data-page="upload">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+        <span>Upload Book</span>
+      </a></li>
       <li><a href="#" class="nav-link" data-page="approvals">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
         <span>Pending Approvals <span class="nav-badge" id="pending-badge" style="display:none"></span></span>
@@ -108,6 +112,78 @@
       <section class="chart-section" aria-labelledby="health-heading"><h2 id="health-heading">Library Health</h2><div class="fac-health-grid" id="fac-health-grid"></div></section>
     </section>
 
+    <!-- UPLOAD BOOK -->
+    <section id="page-upload" class="page" aria-labelledby="upload-heading">
+      <header class="page-header">
+        <h1 id="upload-heading">Upload Book</h1>
+        <p class="page-subtitle">Add a new book to the Ethiolab catalog — it will be immediately published</p>
+      </header>
+      <div class="profile-card" style="max-width:680px">
+        <form id="upload-form" novalidate aria-label="Upload book form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="ub-title" class="form-label">Title <span class="required" aria-hidden="true">*</span></label>
+              <input type="text" id="ub-title" class="form-input" required aria-required="true" aria-describedby="ub-title-err" placeholder="e.g. The Lean Startup" />
+              <span class="form-error" id="ub-title-err" role="alert"></span>
+            </div>
+            <div class="form-group">
+              <label for="ub-author" class="form-label">Author <span class="required" aria-hidden="true">*</span></label>
+              <input type="text" id="ub-author" class="form-input" required aria-required="true" aria-describedby="ub-author-err" placeholder="e.g. Ries, Eric" />
+              <span class="form-error" id="ub-author-err" role="alert"></span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="ub-pages" class="form-label">Pages <span class="required" aria-hidden="true">*</span></label>
+              <input type="number" id="ub-pages" class="form-input" required aria-required="true" aria-describedby="ub-pages-err" min="1" placeholder="320" />
+              <span class="form-error" id="ub-pages-err" role="alert"></span>
+            </div>
+            <div class="form-group">
+              <label for="ub-tag" class="form-label">Topic / Tag <span class="required" aria-hidden="true">*</span></label>
+              <input type="text" id="ub-tag" class="form-input" required aria-required="true" aria-describedby="ub-tag-err" placeholder="e.g. Entrepreneurship" />
+              <span class="form-error" id="ub-tag-err" role="alert"></span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="ub-summary" class="form-label">Summary / Description <span class="required" aria-hidden="true">*</span></label>
+            <textarea id="ub-summary" class="form-input form-textarea" rows="5" required aria-required="true" aria-describedby="ub-summary-err ub-summary-hint" placeholder="Write a detailed summary that helps students understand the book's content and relevance…"></textarea>
+            <span class="form-hint" id="ub-summary-hint">Aim for 3–5 sentences covering key concepts and why students should read it.</span>
+            <span class="form-error" id="ub-summary-err" role="alert"></span>
+          </div>
+          <div class="form-group">
+            <label for="ub-cover" class="form-label">Cover Image URL <span class="optional">(optional)</span></label>
+            <input type="url" id="ub-cover" class="form-input" placeholder="https://example.com/book-cover.jpg" aria-describedby="ub-cover-hint" />
+            <span class="form-hint" id="ub-cover-hint">Direct link to a cover image. If blank, a colored panel is generated.</span>
+            <div id="ub-cover-preview" style="margin-top:.5rem;display:none">
+              <img id="ub-cover-img" src="" alt="Cover preview" style="height:120px;border-radius:var(--radius);object-fit:cover;box-shadow:var(--shadow)" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="ub-pdf" class="form-label">PDF URL <span class="optional">(optional)</span></label>
+            <input type="url" id="ub-pdf" class="form-input" placeholder="https://example.com/book.pdf" aria-describedby="ub-pdf-hint" />
+            <span class="form-hint" id="ub-pdf-hint">Direct URL to the PDF. Students can read it in the built-in reader. Must allow CORS.</span>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="ub-isbn" class="form-label">ISBN <span class="optional">(optional)</span></label>
+              <input type="text" id="ub-isbn" class="form-input" placeholder="978-0-307-88789-7" />
+            </div>
+            <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:.25rem">
+              <label class="toggle-label" style="font-size:.875rem;gap:.5rem;cursor:pointer">
+                <input type="checkbox" id="ub-recommended" />
+                Mark as Recommended
+              </label>
+            </div>
+          </div>
+          <div class="form-error" id="upload-form-err" role="alert" style="margin-bottom:.5rem"></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn--primary" id="upload-submit-btn">Publish Book</button>
+            <button type="reset"  class="btn btn--ghost">Clear Form</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
     <!-- PENDING APPROVALS -->
     <section id="page-approvals" class="page" aria-labelledby="approvals-heading">
       <header class="page-header">
@@ -130,7 +206,23 @@
           Back to all students
         </button>
         <div id="student-detail-content"></div>
-        <section class="chart-section" style="margin-top:1.25rem" aria-labelledby="stu-books-heading"><h2 id="stu-books-heading" style="font-size:1rem;font-weight:700;margin-bottom:.75rem">Their Books</h2><div class="table-wrap" role="region" tabindex="0"><table class="records-table" id="stu-books-table"><thead><tr><th scope="col">Title</th><th scope="col">Author</th><th scope="col">Status</th><th scope="col">Pages</th><th scope="col">Tag</th></tr></thead><tbody id="stu-books-body"></tbody></table></div></section>
+        <section class="chart-section" style="margin-top:1.25rem" aria-labelledby="stu-books-heading">
+          <h2 id="stu-books-heading" style="font-size:1rem;font-weight:700;margin-bottom:.75rem">Library Entries</h2>
+          <div class="table-wrap" role="region" tabindex="0">
+            <table class="records-table" id="stu-books-table">
+              <thead><tr><th scope="col">Title</th><th scope="col">Author</th><th scope="col">Status</th><th scope="col">Pages</th><th scope="col">Tag</th></tr></thead>
+              <tbody id="stu-books-body"></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="chart-section" style="margin-top:1.5rem" aria-labelledby="stu-progress-heading">
+          <h2 id="stu-progress-heading" style="font-size:1rem;font-weight:700;margin-bottom:.75rem">Reading Progress</h2>
+          <div id="stu-reading-progress"></div>
+        </section>
+        <section class="chart-section" style="margin-top:1.5rem" aria-labelledby="stu-notes-heading">
+          <h2 id="stu-notes-heading" style="font-size:1rem;font-weight:700;margin-bottom:.75rem">Book Notes</h2>
+          <div id="stu-book-notes"></div>
+        </section>
       </div>
     </section>
 

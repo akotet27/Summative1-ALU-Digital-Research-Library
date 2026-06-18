@@ -39,7 +39,14 @@
         </svg>
         <span class="theme-toggle__label">Dark</span>
       </button>
-      <a href="login.html" class="btn btn--primary btn--sm">Sign In</a>
+      <!-- Logged-out state -->
+      <a href="login.html" class="btn btn--primary btn--sm" id="nav-signin-btn">Sign In</a>
+      <!-- Logged-in state (hidden until session detected) -->
+      <div class="nav-user-pill" id="nav-user-pill" hidden>
+        <span class="nav-user-pill__avatar" id="nav-user-avatar" aria-hidden="true"></span>
+        <span class="nav-user-pill__name" id="nav-user-name"></span>
+        <a href="dashboard.html" class="btn btn--accent btn--sm">Dashboard</a>
+      </div>
     </div>
 
     <button class="site-nav__hamburger" id="nav-toggle"
@@ -136,12 +143,86 @@
       </div>
     </section>
 
-    <footer style="padding:2rem 1.5rem;border-top:1px solid var(--border);display:flex;gap:1.5rem;flex-wrap:wrap;font-size:.82rem;color:var(--text-muted);max-width:1280px;margin:0 auto">
-      <a href="login.html"     style="color:var(--text-muted)">Sign In / Register</a>
-      <a href="dashboard.html" style="color:var(--text-muted)">Student Dashboard</a>
-      <span style="margin-left:auto">Ethiolab &copy; 2025 · ALU Capstone Project</span>
-    </footer>
   </main>
+
+  <!-- ── Site Footer ─────────────────────────────────────────── -->
+  <footer class="site-footer" aria-labelledby="footer-brand-name">
+    <div class="site-footer__inner">
+
+      <!-- Brand -->
+      <div class="site-footer__brand">
+        <div class="site-footer__logo" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/>
+          </svg>
+        </div>
+        <strong class="site-footer__name" id="footer-brand-name">Ethiolab</strong>
+        <p class="site-footer__tagline">
+          Ethiopia's Digital Research Library — curating knowledge for the next generation of African leaders.
+        </p>
+        <div class="site-footer__badges">
+          <span class="footer-badge">Open Access</span>
+          <span class="footer-badge">ALU Capstone</span>
+          <span class="footer-badge">Peer-Reviewed</span>
+        </div>
+      </div>
+
+      <!-- Explore -->
+      <nav class="site-footer__col" aria-labelledby="footer-explore-heading">
+        <h3 class="site-footer__col-heading" id="footer-explore-heading">Explore</h3>
+        <ul class="site-footer__links" role="list">
+          <li><a href="index.html#catalog">Browse All Books</a></li>
+          <li><a href="index.html#catalog">Recommended Reads</a></li>
+          <li><a href="login.html">Student Sign In</a></li>
+          <li><a href="login.html#register">Create an Account</a></li>
+          <li><a href="dashboard.html">My Library</a></li>
+        </ul>
+      </nav>
+
+      <!-- For Facilitators -->
+      <nav class="site-footer__col" aria-labelledby="footer-fac-heading">
+        <h3 class="site-footer__col-heading" id="footer-fac-heading">Facilitators</h3>
+        <ul class="site-footer__links" role="list">
+          <li><a href="admin.html">Facilitator Dashboard</a></li>
+          <li><a href="admin.html">Upload a Book</a></li>
+          <li><a href="admin.html">Review Submissions</a></li>
+          <li><a href="admin.html">Class Overview</a></li>
+          <li><a href="admin.html">Download Reports</a></li>
+        </ul>
+      </nav>
+
+      <!-- About -->
+      <div class="site-footer__col">
+        <h3 class="site-footer__col-heading">About Ethiolab</h3>
+        <p class="site-footer__about">
+          Ethiolab is a student-built research platform developed as part of the ALU capstone programme.
+          It connects Ethiopian students with curated academic resources.
+        </p>
+        <address class="site-footer__contact">
+          <a href="mailto:ethiolab@alu.edu" class="footer-contact-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect width="20" height="16" x="2" y="4" rx="2"/>
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+            </svg>
+            ethiolab@alu.edu
+          </a>
+        </address>
+      </div>
+
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="site-footer__bottom">
+      <p>&copy; 2025 Ethiolab &mdash; ALU Capstone Project. Built with care by students across Africa.</p>
+      <div class="site-footer__bottom-links">
+        <a href="#">Privacy</a>
+        <a href="#">Accessibility</a>
+        <a href="https://www.alueducation.com" target="_blank" rel="noopener noreferrer">ALU Website</a>
+      </div>
+    </div>
+  </footer>
 
   <!-- ── Book Detail Modal ───────────────────────────────────── -->
   <div class="modal-overlay" id="book-modal" role="dialog" aria-modal="true"
@@ -168,7 +249,7 @@
         </div>
       </div>
       <div class="modal__actions">
-        <a href="login.html" class="btn btn--primary">Sign in to track this book</a>
+        <a href="login.html" class="btn btn--primary" id="book-modal-cta">Sign in to read this book</a>
         <button class="btn btn--ghost" id="book-modal-close-btn">Close</button>
       </div>
     </div>

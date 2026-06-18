@@ -5,12 +5,9 @@
   var SESSION_TTL = 24 * 60 * 60 * 1000; /* 24 hours */
 
   var CLASSES = [
-    { id: 'CS-2025-A',  label: 'CS-2025-A  — Computer Science (Group A)' },
-    { id: 'CS-2025-B',  label: 'CS-2025-B  — Computer Science (Group B)' },
-    { id: 'BUS-2025-A', label: 'BUS-2025-A — Business & Entrepreneurship (A)' },
-    { id: 'BUS-2025-B', label: 'BUS-2025-B — Business & Entrepreneurship (B)' },
-    { id: 'ENV-2025-A', label: 'ENV-2025-A — Environmental Science (A)' },
-    { id: 'HUM-2025-A', label: 'HUM-2025-A — Humanities & Social Sciences (A)' },
+    { id: 'BSE-FY', label: 'BSE — Software Engineering (Final Year)' },
+    { id: 'BEL-FY', label: 'BEL — Entrepreneurial Leadership (Final Year)' },
+    { id: 'IBT-FY', label: 'IBT — International Business & Trade (Final Year)' },
   ];
 
   /* ── Theme helper (runs before any DOM) ──────────────────── */
@@ -105,6 +102,7 @@
       role:         'student',
       class:        data.class,
       mission:      data.mission.trim(),
+      missionDesc:  (data.missionDesc || '').trim(),
       bio:          (data.bio || '').trim(),
       createdAt:    now,
       updatedAt:    now,

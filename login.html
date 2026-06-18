@@ -57,6 +57,13 @@
 
     <!-- ── Right form panel ──────────────────────────────────── -->
     <div class="auth-form-side">
+      <a href="index.html" class="auth-home-link" aria-label="Back to Ethiolab homepage">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m15 18-6-6 6-6"/>
+        </svg>
+        Back to Ethiolab
+      </a>
       <main id="main-content">
         <div class="auth-card">
 
@@ -134,12 +141,19 @@
                 <span class="form-error" id="r-class-err" role="alert"></span>
               </div>
               <div class="form-group">
-                <label for="r-mission" class="form-label">Capstone Mission <span class="required" aria-hidden="true">*</span></label>
+                <label for="r-mission" class="form-label">Mission Title <span class="required" aria-hidden="true">*</span></label>
                 <input type="text" id="r-mission" class="form-input"
                        required aria-required="true" aria-describedby="r-mission-err r-mission-hint"
                        placeholder="e.g. AI tools for healthcare in Africa" />
-                <span class="form-hint" id="r-mission-hint">One sentence describing your capstone focus.</span>
+                <span class="form-hint" id="r-mission-hint">A short title for your capstone mission (one sentence).</span>
                 <span class="form-error" id="r-mission-err" role="alert"></span>
+              </div>
+              <div class="form-group">
+                <label for="r-mission-desc" class="form-label">Mission Description <span class="optional">(optional)</span></label>
+                <textarea id="r-mission-desc" class="form-input form-textarea" rows="3"
+                          aria-describedby="r-mission-desc-hint"
+                          placeholder="Describe the problem you're solving, your approach, and expected impact…"></textarea>
+                <span class="form-hint" id="r-mission-desc-hint">2–4 sentences about your capstone goals and methodology.</span>
               </div>
               <div class="form-group">
                 <label for="r-password" class="form-label">Password <span class="required" aria-hidden="true">*</span></label>
@@ -261,7 +275,9 @@
         document.getElementById('live-assertive').textContent = result.error;
         return;
       }
-      window.location.href = result.session.role === 'facilitator' ? 'admin.html' : 'dashboard.html';
+      var bookQuery = new URLSearchParams(window.location.search).get('book');
+      var dashUrl   = bookQuery ? 'dashboard.html?book=' + encodeURIComponent(bookQuery) : 'dashboard.html';
+      window.location.href = result.session.role === 'facilitator' ? 'admin.html' : dashUrl;
     });
 
     document.getElementById('l-email').addEventListener('blur', function () {
@@ -271,11 +287,13 @@
     /* Register form */
     document.getElementById('register-form').addEventListener('submit', function (e) {
       e.preventDefault();
+      var missionDescEl = document.getElementById('r-mission-desc');
       var data = {
         name:            document.getElementById('r-name').value,
         email:           document.getElementById('r-email').value,
         class:           document.getElementById('r-class').value,
         mission:         document.getElementById('r-mission').value,
+        missionDesc:     missionDescEl ? missionDescEl.value : '',
         password:        document.getElementById('r-password').value,
         confirmPassword: document.getElementById('r-confirm').value,
       };

@@ -84,6 +84,7 @@
       else a.removeAttribute('aria-current');
     });
     closeSidebar();
+    if (page === 'upload')        refreshUpload();
     if (page === 'overview')     refreshOverview();
     if (page === 'approvals')    refreshApprovals();
     if (page === 'students')     refreshStudents();
@@ -98,6 +99,120 @@
       navigateTo(link.dataset.page);
     });
   });
+
+  /* ── Upload Book page ───────────────────────────────────────── */
+  var TAG_COLORS = {
+    'Leadership':      '#1B4D3E', 'Entrepreneurship': '#2D6A4F',
+    'Technology':      '#0F3460', 'Innovation':       '#1A535C',
+    'Finance':         '#7B2D8B', 'Design':           '#C05621',
+    'Communication':   '#2C5282', 'Strategy':         '#744210',
+    'Ethics':          '#22543D', 'Research':         '#1A365D'
+  };
+
+  function randomColor() {
+    var colors = Object.values(TAG_COLORS);
+    return colors[Math.floor(Math.random() * colors.length)];
+  }
+
+  function refreshUpload() {
+    var form   = el('upload-form');
+    var imgIn  = el('ub-cover');
+    var imgPre = el('ub-cover-preview');
+    var imgEl  = el('ub-cover-img');
+
+    /* Live cover preview */
+    if (imgIn && imgPre && imgEl) {
+      imgIn.addEventListener('input', function () {
+        var url = imgIn.value.trim();
+        if (url) {
+          imgEl.src = url;
+          imgPre.style.display = 'block';
+        } else {
+          imgPre.style.display = 'none';
+        }
+      });
+    }
+
+    if (!form || form._wired) return;
+    form._wired = true;
+
+    form.addEventListener('reset', function () {
+      if (imgPre) imgPre.style.display = 'none';
+      form.querySelectorAll('.form-error').forEach(function (e) { e.textContent = ''; });
+    });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var errGlobal = el('upload-form-err');
+      if (errGlobal) errGlobal.textContent = '';
+
+      var titleEl   = el('ub-title');
+      var authorEl  = el('ub-author');
+      var pagesEl   = el('ub-pages');
+      var tagEl     = el('ub-tag');
+      var summaryEl = el('ub-summary');
+      var coverEl   = el('ub-cover');
+      var pdfEl     = el('ub-pdf');
+      var isbnEl    = el('ub-isbn');
+      var recEl     = el('ub-recommended');
+
+      var valid = true;
+
+      function fieldErr(errId, msg) {
+        var e = el(errId);
+        if (e) e.textContent = msg;
+        valid = false;
+      }
+
+      if (!titleEl.value.trim())   fieldErr('ub-title-err',   'Title is required.');
+      if (!authorEl.value.trim())  fieldErr('ub-author-err',  'Author is required.');
+      if (!summaryEl.value.trim()) fieldErr('ub-summary-err', 'Summary is required.');
+
+      var pages = parseInt(pagesEl.value, 10);
+      if (!pagesEl.value.trim() || isNaN(pages) || pages < 1) {
+        fieldErr('ub-pages-err', 'Enter a valid page count.');
+      }
+      if (!tagEl.value.trim())     fieldErr('ub-tag-err', 'Topic / Tag is required.');
+
+      if (!valid) return;
+
+      /* Clear previous errors */
+      ['ub-title-err','ub-author-err','ub-pages-err','ub-tag-err','ub-summary-err'].forEach(function (id) {
+        var e = el(id); if (e) e.textContent = '';
+      });
+
+      var tag = tagEl.value.trim();
+      var rec = {
+        id:               'r_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+        userId:           userId,
+        title:            titleEl.value.trim(),
+        author:           authorEl.value.trim(),
+        pages:            pages,
+        tag:              tag,
+        description:      summaryEl.value.trim(),
+        coverUrl:         coverEl.value.trim() || '',
+        coverColor:       TAG_COLORS[tag] || randomColor(),
+        pdfUrl:           pdfEl   ? pdfEl.value.trim()  : '',
+        isbn:             isbnEl  ? isbnEl.value.trim()  : '',
+        recommended:      recEl   ? recEl.checked        : false,
+        status:           'finished',
+        approved:         true,
+        approvedBy:       userId,
+        approvedAt:       new Date().toISOString(),
+        addedByFacilitator: true,
+        dateAdded:        new Date().toISOString().slice(0, 10),
+        notes:            ''
+      };
+
+      var recs = storage.loadRecords();
+      recs.push(rec);
+      storage.saveRecords(recs);
+
+      toast('"' + rec.title + '" published to the catalog.');
+      form.reset();
+      announce('Book published: ' + rec.title);
+    });
+  }
 
   /* ── Overview page ───────────────────────────────────────────── */
   function refreshOverview() {
@@ -366,14 +481,19 @@
   }
 
   function showStudentDetail(uid) {
-    var allRecs  = storage.loadRecords();
-    var user     = auth.getUserById(uid);
-    if (!user)   return;
+    var allRecs    = storage.loadRecords();
+    var allNotes   = storage.loadNotes ? storage.loadNotes() : [];
+    var allProgress = storage.loadProgress ? storage.loadProgress() : [];
+    var user       = auth.getUserById(uid);
+    if (!user) return;
 
     selectedStudentId = uid;
     var stuRecs  = allRecs.filter(function (r) { return r.userId === uid; });
     var done     = stuRecs.filter(function (r) { return r.status === 'finished'; });
     var reading  = stuRecs.filter(function (r) { return r.status === 'reading'; });
+
+    /* All facilitator-uploaded books for progress display */
+    var facBooks = allRecs.filter(function (r) { return r.addedByFacilitator && r.approved; });
 
     /* Render detail card */
     var detailContent = el('student-detail-content');
@@ -383,18 +503,19 @@
           '<div class="student-detail__avatar">' + escHtml(auth.initials(user.name)) + '</div>' +
           '<div>' +
             '<div class="student-detail__name">' + escHtml(user.name) + '</div>' +
-            '<div class="student-detail__class">' + escHtml(user.class || '') + ' · ' + escHtml(user.email || '') + '</div>' +
-            '<div class="student-detail__mission">' + escHtml(user.mission || '') + '</div>' +
+            '<div class="student-detail__class">' + escHtml(user.class || '') + (user.email ? ' · ' + escHtml(user.email) : '') + '</div>' +
+            (user.mission ? '<div class="student-detail__mission"><strong>Mission:</strong> ' + escHtml(user.mission) + '</div>' : '') +
+            (user.missionDesc ? '<div class="student-detail__mission" style="font-style:italic;margin-top:.25rem">' + escHtml(user.missionDesc) + '</div>' : '') +
           '</div>' +
         '</div>' +
         '<div class="student-detail__stats">' +
-          '<span>' + stuRecs.length + ' total</span>' +
+          '<span>' + stuRecs.length + ' library entries</span>' +
           '<span>' + done.length + ' finished</span>' +
           '<span>' + reading.length + ' reading</span>' +
         '</div>';
     }
 
-    /* Render their books table */
+    /* Render their books table with progress + notes */
     var tbody = el('stu-books-body');
     if (tbody) {
       tbody.innerHTML = stuRecs.length === 0
@@ -408,6 +529,65 @@
             '<td>' + escHtml(r.tag) + '</td>' +
           '</tr>';
         }).join('');
+    }
+
+    /* Reading progress section for facilitator-uploaded books */
+    var progSection = el('stu-reading-progress');
+    if (progSection) {
+      var progEntries = allProgress.filter(function (p) { return p.userId === uid; });
+
+      if (facBooks.length === 0) {
+        progSection.innerHTML = '<p style="color:var(--muted);font-size:.875rem">No facilitator books available yet.</p>';
+      } else {
+        progSection.innerHTML = facBooks.map(function (book) {
+          var prog = progEntries.find(function (p) { return p.bookId === book.id; });
+          var pct  = prog ? Math.min(100, Math.round(prog.percent || 0)) : 0;
+          var statusLabel = prog
+            ? (prog.completed ? 'Completed' : 'In Progress — page ' + (prog.currentPage || 0) + ' of ' + (prog.totalPages || book.pages || '?'))
+            : 'Not started';
+          return '<div style="margin-bottom:1rem">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">' +
+              '<span style="font-size:.875rem;font-weight:600">' + escHtml(book.title) + '</span>' +
+              '<span style="font-size:.8rem;color:var(--muted)">' + pct + '%</span>' +
+            '</div>' +
+            '<div class="bk-progress bk-progress--track" style="margin:0">' +
+              '<div class="bk-progress__fill" style="width:' + pct + '%"></div>' +
+            '</div>' +
+            '<div style="font-size:.78rem;color:var(--muted);margin-top:.2rem">' + escHtml(statusLabel) + '</div>' +
+          '</div>';
+        }).join('');
+      }
+    }
+
+    /* Notes per book */
+    var notesSection = el('stu-book-notes');
+    if (notesSection) {
+      var stuNotes = allNotes.filter(function (n) { return n.userId === uid; });
+      if (stuNotes.length === 0) {
+        notesSection.innerHTML = '<p style="color:var(--muted);font-size:.875rem">This student has not added any notes yet.</p>';
+      } else {
+        /* Group notes by bookId */
+        var notesByBook = {};
+        stuNotes.forEach(function (n) {
+          if (!notesByBook[n.bookId]) notesByBook[n.bookId] = [];
+          notesByBook[n.bookId].push(n);
+        });
+        notesSection.innerHTML = Object.keys(notesByBook).map(function (bookId) {
+          var book = allRecs.find(function (r) { return r.id === bookId; });
+          var bookTitle = book ? book.title : 'Unknown Book';
+          var notes = notesByBook[bookId];
+          return '<div style="margin-bottom:1.25rem">' +
+            '<h4 style="font-family:var(--font-serif);font-size:.95rem;color:var(--primary);margin-bottom:.5rem">' + escHtml(bookTitle) + '</h4>' +
+            notes.map(function (n) {
+              return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.6rem .8rem;margin-bottom:.4rem;font-size:.85rem">' +
+                '<p style="margin:0 0 .3rem">' + escHtml(n.content || n.text || n.note || '') + '</p>' +
+                (n.page ? '<span style="font-size:.75rem;color:var(--muted)">Page ' + escHtml(String(n.page)) + '</span>' : '') +
+                (n.createdAt ? '<span style="font-size:.75rem;color:var(--muted);float:right">' + escHtml(n.createdAt.slice(0, 10)) + '</span>' : '') +
+              '</div>';
+            }).join('') +
+          '</div>';
+        }).join('');
+      }
     }
 
     el('student-detail').hidden = false;
