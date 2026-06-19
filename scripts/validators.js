@@ -4,7 +4,7 @@
  *  1. Title no-leading/trailing-space:   /^\S(?:.*\S)?$/
  *  2. Pages positive integer:            /^[1-9]\d*$/
  *  3. Date YYYY-MM-DD (strict):          /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/
- *  4. Tag letters/spaces/hyphens:        /^[A-Za-zÀ-ɏ]+(?:[ -][A-Za-zÀ-ɏ]+)*$/
+ *  4. Tag letters/spaces/hyphens:        /^[A-Za-zÀ-ÖØ-öø-ɏ]+(?:[ -][A-Za-zÀ-ÖØ-öø-ɏ]+)*$/
  *  5. ISBN-10 or ISBN-13 (alternation):  /^(?:\d{9}[\dX]|\d{13})$/
  *  6. URL positive lookahead (advanced): /^https?:\/\/(?=\S+\.\S).+/i
  *  7. Duplicate word back-reference:     /\b(\w+)\s+\1\b/i   (advanced)
@@ -81,7 +81,7 @@
   /* Rule 4: tag letters, spaces, hyphens (unicode-aware) */
   function validateTag(v) {
     if (!v || !v.trim()) return 'Tag is required.';
-    if (!/^[A-Za-zÀ-ɏ]+(?:[ -][A-Za-zÀ-ɏ]+)*$/.test(v.trim()))
+    if (!/^[A-Za-zÀ-ÖØ-öø-ɏ]+(?:[ -][A-Za-zÀ-ÖØ-öø-ɏ]+)*$/.test(v.trim()))
       return 'Tag must contain only letters, spaces, or hyphens.';
     if (v.trim().length > 50) return 'Tag must be 50 characters or fewer.';
     return '';
@@ -123,7 +123,7 @@
   function validateAuthorFormat(v) {
     if (!v || !v.trim() || v.indexOf(',') === -1) return '';
     /* Capture Surname, then negative lookahead prevents Given starting with same token */
-    var pattern = /^([A-Za-zÀ-ɏ'-]+(?:\s[A-Za-zÀ-ɏ'-]+)*),\s+(?!\1\b)[A-Za-zÀ-ɏ'. -]+$/;
+    var pattern = /^([A-Za-zÀ-ÖØ-öø-ɏ'-]+(?:[ ][A-Za-zÀ-ÖØ-öø-ɏ'-]+)*),\s+(?!\1\b)[A-Za-zÀ-ÖØ-öø-ɏ'. -]+$/;
     if (!pattern.test(v.trim()))
       return 'When using a comma, format must be "Surname, Given Name" (Given ≠ Surname).';
     return '';
