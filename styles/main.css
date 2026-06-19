@@ -4215,6 +4215,123 @@ mark {
 /* ═══════════════════════════════════════════════════════════
    REDUCED MOTION
    ═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   SMALL-SCREEN RESPONSIVE POLISH
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Search hint: wrap below input on narrow viewports ─────── */
+@media (max-width: 640px) {
+  .search-wrap { flex-wrap: wrap; }
+  .search-options {
+    width: 100%;
+    margin-left: 0;
+    padding-left: 2.4rem;
+  }
+  .search-hint { white-space: normal; }
+}
+
+/* ── Hero: tighten on small phones ─────────────────────────── */
+@media (max-width: 480px) {
+  .hero__badge { font-size: .72rem; padding: .28rem .8rem; }
+  .hero__stats { gap: 1.25rem; }
+}
+@media (max-width: 360px) {
+  .hero { padding: calc(var(--topbar-h) + 1.25rem) .75rem 2rem; }
+  .hero__stats { gap: .875rem; }
+  .hero__stat strong { font-size: 1.35rem; }
+  .hero__stat span { font-size: .72rem; }
+}
+
+/* ── About section links: full-width on tiny phones ─────────── */
+@media (max-width: 400px) {
+  .about-section__links { flex-direction: column; }
+  .about-link { width: 100%; justify-content: center; }
+}
+
+/* ── Footer bottom bar: stack on small phones ───────────────── */
+@media (max-width: 480px) {
+  .site-footer__bottom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .5rem;
+    padding: 1rem 1.25rem;
+  }
+  .site-footer__bottom-links { gap: 1rem; }
+}
+
+/* ── Page-header action buttons: 2-per-row at 400px ─────────── */
+@media (max-width: 400px) {
+  .page-header__actions .btn {
+    flex: 1 1 calc(50% - .25rem);
+  }
+}
+
+/* ── Approvals tabs: equal-width at 360px ───────────────────── */
+@media (max-width: 360px) {
+  .approvals-tab {
+    flex: 1;
+    justify-content: center;
+    font-size: .72rem;
+    padding: .4rem .35rem;
+  }
+}
+
+/* ── Stat cards: single column at 360px ─────────────────────── */
+@media (max-width: 360px) {
+  .stats-grid { grid-template-columns: 1fr; gap: .65rem; }
+  .stat-card { padding: .8rem .9rem; gap: .6rem; }
+}
+
+/* ── Chart / shelf sections: tighter padding at 360px ──────── */
+@media (max-width: 360px) {
+  .chart-section,
+  .shelf-section,
+  .notes-preview-section {
+    padding: 1rem .875rem 1.25rem;
+  }
+}
+
+/* ── Auth card: break long email addresses ──────────────────── */
+@media (max-width: 400px) {
+  .auth-card code { word-break: break-all; font-size: .68rem; }
+  .auth-card { padding: 1.1rem; }
+}
+
+/* ── Nav: hide sign-in label text at 360px, keep icon ──────── */
+@media (max-width: 360px) {
+  .site-nav__cta .btn--sm {
+    padding: .35rem .6rem;
+    font-size: .78rem;
+  }
+}
+
+/* ── Catalog section: tighten on 360px ─────────────────────── */
+@media (max-width: 360px) {
+  .catalog-section { padding: 1.75rem .75rem; }
+  .catalog-controls { gap: 1rem; margin-bottom: 1.25rem; }
+  .about-section { padding: 2rem .875rem; }
+}
+
+/* ── Toast: full-width on tiny phones ──────────────────────── */
+@media (max-width: 400px) {
+  .toast {
+    right: .75rem;
+    left: .75rem;
+    max-width: none;
+    bottom: .75rem;
+  }
+}
+
+/* ── Settings card: tighter padding at 360px ───────────────── */
+@media (max-width: 360px) {
+  .settings-card { padding: 1rem .875rem; }
+}
+
+/* ── Filter bar toggle label: allow text wrap at 360px ─────── */
+@media (max-width: 360px) {
+  .filter-bar .toggle-label { white-space: normal !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
