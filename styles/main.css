@@ -87,6 +87,8 @@ code {
   background: var(--bg-offset);
   padding: .1em .35em;
   border-radius: 4px;
+  overflow-wrap: break-word;
+  word-break: break-all;
 }
 
 /* ── Accessibility ────────────────────────────────────────── */
@@ -261,6 +263,12 @@ mark {
   .site-nav__links { display: flex; }
   .site-nav__hamburger { display: none; }
 }
+/* Prevent nav overflow on the very smallest phones */
+@media (max-width: 400px) {
+  .theme-toggle__label { display: none; }
+  .site-nav .theme-toggle { padding: .3rem; }
+  .site-nav__cta { gap: .4rem; }
+}
 
 /* Mobile nav open state */
 .site-nav__links.is-open {
@@ -400,6 +408,21 @@ mark {
   transition: background var(--t);
 }
 .hero__search-btn:hover { background: var(--accent-light); }
+/* Hero search: stack button below input on very small phones */
+@media (max-width: 480px) {
+  .hero__search {
+    flex-direction: column;
+    padding: .5rem;
+    gap: .4rem;
+    border-radius: var(--radius);
+  }
+  .hero__search-btn {
+    width: 100%;
+    justify-content: center;
+    border-radius: var(--radius);
+  }
+}
+
 .hero__stats {
   display: flex;
   justify-content: center;
@@ -478,7 +501,7 @@ mark {
   margin-top: .5rem;
   line-height: 1.5;
 }
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .catalog-controls {
     flex-direction: row;
     align-items: flex-start;
@@ -488,6 +511,11 @@ mark {
   .catalog-controls .filter-bar {
     flex: 1;
     max-width: 700px;
+  }
+}
+@media (min-width: 900px) {
+  .catalog-controls {
+    flex-wrap: nowrap;
   }
 }
 .records-count {
@@ -915,7 +943,7 @@ mark {
   grid-template-columns: 1fr;
   gap: 0;
 }
-@media (min-width: 560px) {
+@media (min-width: 640px) {
   .form-row { grid-template-columns: 1fr 1fr; gap: 0 1rem; }
 }
 
@@ -1026,6 +1054,19 @@ mark {
 .modal .form-row .form-group {
   flex: 1;
   margin-bottom: 0;
+}
+/* Stack modal form rows on small phones */
+@media (max-width: 639px) {
+  .modal .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  .modal .form-row .form-group {
+    margin-bottom: .9rem;
+  }
+  .modal form { padding: 1rem; }
+  .modal__title { padding: 1rem 1rem .875rem; }
+  .modal__actions { padding: .875rem 1rem; }
 }
 .modal .form-error[role="alert"] {
   display: block;
@@ -1315,6 +1356,11 @@ mark {
 @media (max-width: 639px) {
   .auth-brand { display: none; }
   .auth-layout { grid-template-columns: 1fr; }
+}
+/* Tighten auth-form padding on small phones so the card has room */
+@media (max-width: 480px) {
+  .auth-form-side { padding: 1.5rem 1rem; }
+  .auth-card { padding: 1.25rem; }
 }
 
 .auth-home-link {
@@ -1872,6 +1918,19 @@ mark {
   .page-header__actions { width: 100%; }
   .page-header__actions .btn { flex: 1; justify-content: center; }
 }
+@media (max-width: 639px) {
+  /* Browse Books: let the inline max-width:240px search-wrap stretch full-width */
+  .page-header__actions .search-wrap {
+    width: 100%;
+    max-width: none !important;
+    flex: 1 1 100%;
+  }
+  .page-header__actions .filter-select {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+  }
+}
 
 /* ── Toast ───────────────────────────────────────────────────── */
 .toast {
@@ -2277,6 +2336,41 @@ mark {
   align-items: center;
   gap: 1rem;
   flex-wrap: wrap;
+}
+/* BEM avatar used by dashboard.html profile section */
+.profile-card__avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  font-family: var(--font-serif);
+  letter-spacing: -.02em;
+}
+.profile-card__name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+.profile-card__meta {
+  font-size: .83rem;
+  color: var(--text-muted);
+}
+.profile-card__mission {
+  font-size: .875rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+.profile-card form {
+  width: 100%;
+  margin-top: .5rem;
 }
 .profile-avatar {
   width: 64px;
@@ -2811,8 +2905,18 @@ mark {
 .reader-layout {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 64px);
+  height: calc(100vh - var(--topbar-h));
   overflow: hidden;
+}
+@media (max-width: 767px) {
+  .reader-layout {
+    height: auto;
+    min-height: calc(100dvh - var(--topbar-h));
+    overflow: visible;
+  }
+  .reader-body {
+    max-height: calc(100dvh - var(--topbar-h) - 120px);
+  }
 }
 .reader-header {
   background: var(--bg-card);
@@ -3041,6 +3145,13 @@ mark {
   .modal__actions { flex-direction: column; }
   .modal__actions .btn { width: 100%; justify-content: center; }
 }
+/* Extra-small phones: tighten modal inner padding so content isn't cramped */
+@media (max-width: 360px) {
+  .modal-overlay { padding: .25rem; }
+  .modal__body, .modal form { padding: .875rem; }
+  .modal__title { padding: .875rem .875rem .75rem; }
+  .modal__actions { padding: .75rem .875rem; }
+}
 
 /* ═══════════════════════════════════════════════════════════
    SITE FOOTER
@@ -3062,6 +3173,16 @@ mark {
   .site-footer__inner {
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
+  }
+}
+/* Tablet: tighten footer padding at common tablet widths */
+@media (max-width: 767px) {
+  .site-footer__inner {
+    padding: 2.5rem 1.25rem 2rem;
+    gap: 1.75rem;
+  }
+  .site-footer__bottom {
+    padding: 1rem 1.25rem;
   }
 }
 @media (max-width: 540px) {
@@ -3425,6 +3546,7 @@ mark {
   /* Records table: hide less critical columns */
   .records-table .col-author,
   .records-table .col-date,
+  .records-table .col-tag,
   .records-table .col-approval {
     display: none;
   }
@@ -3661,10 +3783,16 @@ mark {
 [data-theme="dark"] .profile-card {
   background: var(--bg-card);
 }
+[data-theme="dark"] .profile-card__avatar {
+  background: var(--primary-mid);
+}
 [data-theme="dark"] .profile-card__name {
   color: var(--text);
 }
 [data-theme="dark"] .profile-card__meta {
+  color: var(--text-muted);
+}
+[data-theme="dark"] .profile-card__mission {
   color: var(--text-muted);
 }
 [data-theme="dark"] .view-modal__title {
@@ -3965,6 +4093,12 @@ mark {
   border-color: var(--border);
   border-bottom-color: var(--bg-card);
   font-weight: 600;
+}
+@media (max-width: 480px) {
+  .approvals-tab {
+    padding: .45rem .7rem;
+    font-size: .8rem;
+  }
 }
 [data-theme="dark"] .approvals-tab.active {
   background: var(--bg-card);
