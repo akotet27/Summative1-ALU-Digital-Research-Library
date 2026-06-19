@@ -2,7 +2,7 @@
    ALUSOURCE — ALU's Digital Research Library
    Primary: #0F2A5C (Navy Blue)  Accent: #B91C1C (Dark Red)
    Background: #FFFFFF (White)
-   Fonts: Playfair Display + Inter (Google Fonts)
+   Fonts: Montserrat (Google Fonts)
    Mobile-first | WCAG AA | IIFE JS pattern
    ============================================================ */
 
@@ -37,8 +37,8 @@
   --radius-lg:     14px;
   --radius-xl:     20px;
   --t:             200ms ease;
-  --font-sans:     'Inter', system-ui, -apple-system, sans-serif;
-  --font-serif:    'Playfair Display', Georgia, serif;
+  --font-sans:     'Montserrat', system-ui, -apple-system, sans-serif;
+  --font-serif:    'Montserrat', Georgia, serif;
   --font-mono:     'JetBrains Mono', 'Courier New', monospace;
   --sidebar-w:     260px;
   --topbar-h:      56px;

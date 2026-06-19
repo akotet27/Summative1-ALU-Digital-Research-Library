@@ -115,6 +115,7 @@ All data is stored in `localStorage`. Keys:
 | `--accent` | `#B91C1C` (red) | `#B91C1C` |
 | `--bg` | `#FFFFFF` | `#0B1628` |
 
+- Font: Montserrat (Google Fonts) used throughout — headings, body, and UI elements
 - Colors: white, red, and blue only — no green UI elements
 - Theme toggle (light / dark) on every page, persisted via `localStorage`
 - Fully responsive: mobile-first, works on phones, tablets, and desktops
