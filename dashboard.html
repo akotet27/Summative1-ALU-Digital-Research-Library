@@ -218,7 +218,7 @@
       <header class="page-header"><h1 id="settings-heading">Settings</h1></header>
       <div class="settings-grid">
         <div class="settings-card"><h2 class="settings-card__title">Reading Goal</h2><p class="settings-card__desc">Set a target number of books to finish this term.</p><div class="form-group"><label for="s-goal" class="form-label">Target resources</label><input type="number" id="s-goal" class="form-input" min="0" /></div><button class="btn btn--primary" id="save-goal-btn">Save Goal</button></div>
-        <div class="settings-card"><h2 class="settings-card__title">Reading Speed</h2><p class="settings-card__desc">Used by the page-to-time converter.</p><div class="form-group"><label for="s-ppm" class="form-label">Pages per minute</label><input type="number" id="s-ppm" class="form-input" min="0.1" step="0.1" /></div><button class="btn btn--primary" id="save-units-btn">Save Speed</button></div>
+        <div class="settings-card"><h2 class="settings-card__title">Reading Speed</h2><p class="settings-card__desc">Used by the page-to-time converter in book details.</p><div class="form-group"><label for="s-ppm" class="form-label">Pages per minute</label><input type="number" id="s-ppm" class="form-input" min="0.1" step="0.1" aria-describedby="s-ppm-preview" /><p id="s-ppm-preview" class="form-hint" style="margin-top:.35rem;font-size:.8rem;color:var(--text-muted)" aria-live="polite"></p></div><button class="btn btn--primary" id="save-units-btn">Save Speed</button></div>
         <div class="settings-card settings-card--danger"><h2 class="settings-card__title">Danger Zone</h2><p class="settings-card__desc">Clear all your personal data (cannot be undone).</p><div style="display:flex;gap:.75rem;flex-wrap:wrap"><button class="btn btn--danger" id="clear-data-btn">Clear All My Data</button><button class="btn btn--outline" id="clear-notes-btn">Clear My Notes</button></div></div>
       </div>
     </section>
@@ -299,6 +299,7 @@
         <p class="view-modal__author" id="view-author"></p>
         <div class="view-modal__meta">
           <span class="view-meta-item" id="view-pages"></span>
+          <span class="view-meta-item" id="view-read-time" hidden></span>
           <span class="view-meta-item" id="view-tag"></span>
           <span class="view-meta-item" id="view-date"></span>
           <span class="view-meta-item view-meta-item--nopdf" id="view-no-pdf-badge" hidden>No PDF yet</span>

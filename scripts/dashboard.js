@@ -148,6 +148,7 @@
       if (capMsg) {
         capMsg.hidden = false;
         if (finished >= goal) {
+          capMsg.setAttribute('aria-live', 'assertive');
           capMsg.textContent = 'Goal reached! ' + finished + ' done.';
           capMsg.className   = 'cap-message cap-message--success';
           announce('Goal reached! You have finished ' + finished + ' of ' + goal + ' resources.', true);
@@ -158,6 +159,7 @@
           var sidebarCap = document.querySelector('.sidebar__cap');
           if (sidebarCap) sidebarCap.appendChild(doneEl);
         } else {
+          capMsg.setAttribute('aria-live', 'polite');
           var left = goal - finished;
           capMsg.textContent = left + ' more to reach your goal of ' + goal + '.';
           capMsg.className   = 'cap-message';
@@ -687,6 +689,8 @@
         '<td class="col-actions">' +
           '<button class="btn btn--xs btn--ghost action-view" data-id="' + escHtml(r.id) + '" aria-label="View ' + escHtml(r.title) + '">View</button>' +
           '<button class="btn btn--xs btn--accent action-note" data-id="' + escHtml(r.id) + '" aria-label="Note for ' + escHtml(r.title) + '">Note</button>' +
+          '<button class="btn btn--xs btn--outline action-edit" data-id="' + escHtml(r.id) + '" aria-label="Edit ' + escHtml(r.title) + '">Edit</button>' +
+          '<button class="btn btn--xs btn--danger action-delete" data-id="' + escHtml(r.id) + '" aria-label="Delete ' + escHtml(r.title) + '">Delete</button>' +
         '</td>' +
       '</tr>';
     }).join('');
@@ -699,6 +703,18 @@
     });
     tbody.querySelectorAll('.action-note').forEach(function (btn) {
       btn.addEventListener('click', function () { openNoteModal(null, btn.dataset.id); });
+    });
+    tbody.querySelectorAll('.action-edit').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var rec = facBooks().find(function (r) { return r.id === btn.dataset.id; });
+        if (rec) openEditModal(rec);
+      });
+    });
+    tbody.querySelectorAll('.action-delete').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var rec = facBooks().find(function (r) { return r.id === btn.dataset.id; });
+        if (rec) confirmDeleteRecord(rec);
+      });
     });
   }
 
@@ -909,12 +925,27 @@
   }
 
   /* ── Settings page ───────────────────────────────────────────── */
+  function ppmToPreview(ppm) {
+    /* Convert pages-per-minute speed into an example for a 300-page book */
+    var v = parseFloat(ppm) || 1.5;
+    var min = Math.round(300 / v);
+    var hrs = Math.floor(min / 60), rem = min % 60;
+    return 'e.g. a 300-page book: ~' + (hrs > 0 ? hrs + 'h ' + rem + 'm' : rem + 'm');
+  }
+
   function loadSettings() {
     var s = storage.loadUserSettings(userId);
-    var goalEl = el('s-goal');
-    var ppmEl  = el('s-ppm');
+    var goalEl    = el('s-goal');
+    var ppmEl     = el('s-ppm');
+    var ppmPreview = el('s-ppm-preview');
     if (goalEl) goalEl.value = s.goal || 0;
-    if (ppmEl)  ppmEl.value  = s.ppm  || 1.5;
+    if (ppmEl)  { ppmEl.value = s.ppm || 1.5; }
+    if (ppmPreview) ppmPreview.textContent = ppmToPreview(s.ppm || 1.5);
+    if (ppmEl && ppmPreview) {
+      ppmEl.addEventListener('input', function () {
+        ppmPreview.textContent = ppmToPreview(ppmEl.value);
+      });
+    }
   }
 
   var saveGoalBtn = el('save-goal-btn');
@@ -975,6 +1006,23 @@
     set('view-pages',       (rec.pages || '?') + ' pages');
     set('view-tag',         rec.tag    || '');
     set('view-date',        rec.dateAdded || '');
+
+    /* Reading time conversion: pages ÷ ppm → minutes → hours */
+    var readTimeEl = el('view-read-time');
+    if (readTimeEl && rec.pages) {
+      var s   = storage.loadUserSettings(userId);
+      var ppm = parseFloat(s.ppm) || 1.5;
+      var totalMin = Math.round(rec.pages / ppm);
+      var hrs  = Math.floor(totalMin / 60);
+      var mins = totalMin % 60;
+      var label = hrs > 0
+        ? '~' + hrs + 'h ' + mins + 'm to read'
+        : '~' + mins + 'm to read';
+      readTimeEl.textContent = label;
+      readTimeEl.hidden = false;
+    } else if (readTimeEl) {
+      readTimeEl.hidden = true;
+    }
 
     var spineEl  = el('view-spine');
     if (spineEl)  spineEl.className  = 'view-modal__spine view-modal__spine--' + (rec.status || 'want');

@@ -154,5 +154,44 @@
     "recommended": true,
     "createdAt": "2025-11-08T09:00:00.000Z",
     "updatedAt": "2025-11-08T09:00:00.000Z"
+  },
+  {
+    "id": "rec_0013",
+    "title": "The Manager's Path",
+    "author": "Fournier, Camille",
+    "pages": 244,
+    "status": "want",
+    "tag": "Leadership",
+    "dateAdded": "2025-01-01",
+    "notes": "",
+    "recommended": false,
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "rec_0014",
+    "title": "Show Your Work!",
+    "author": "Kleon, Austin",
+    "pages": 96,
+    "status": "finished",
+    "tag": "Innovation",
+    "dateAdded": "2025-12-31",
+    "notes": "Short and punchy — finished in one sitting. Great for sharing capstone progress publicly.",
+    "recommended": true,
+    "createdAt": "2025-12-31T23:00:00.000Z",
+    "updatedAt": "2025-12-31T23:00:00.000Z"
+  },
+  {
+    "id": "rec_0015",
+    "title": "AI & Society: Ethics in Practice",
+    "author": "Coeckelbergh, Mark",
+    "pages": 800,
+    "status": "reading",
+    "tag": "AI & Machine Learning",
+    "dateAdded": "2025-10-01",
+    "notes": "Dense but essential — maps the full ethical landscape of AI deployment in low-resource settings.",
+    "recommended": false,
+    "createdAt": "2025-10-01T06:00:00.000Z",
+    "updatedAt": "2025-10-01T06:00:00.000Z"
   }
 ]
