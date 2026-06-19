@@ -610,6 +610,17 @@ mark {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(15,42,92,.12);
 }
+.search-options {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: .4rem;
+}
+.search-hint {
+  font-size: .72rem;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
 .filter-select {
   padding: .55rem .75rem;
   border: 1.5px solid var(--border);
